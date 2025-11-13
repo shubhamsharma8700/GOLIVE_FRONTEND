@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoLive Iframe Test</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #eef2f7;
+      }
+      iframe {
+        width: 80%;
+        height: 80%;
+        border: none;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe 
+  src="http://localhost:5173/event/https://d3duh532qzenq4.cloudfront.net/vod/testing-poc/file_example_MP4_640_3MG.mp4" 
+  frameborder="0" 
+  allow="payment; fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-presentation"
+></iframe>
+  </body>
+</html>
