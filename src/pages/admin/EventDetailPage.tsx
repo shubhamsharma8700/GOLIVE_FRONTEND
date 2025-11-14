@@ -70,34 +70,50 @@ export const EventDetailPage: React.FC = () => {
   }, [eventId]);
 
   const loadEventDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await eventApi.getEvent(eventId!);
-      const eventData = response.event || response;
-      
-      setEvent({
-        eventId: eventData.eventId || eventData.id,
-        title: eventData.title || eventData.name,
-        description: eventData.description,
-        startTime: eventData.startTime,
-        endTime: eventData.endTime,
-        accessMode: eventData.accessMode || 'open',
-        password: eventData.password,
-        paymentAmount: eventData.paymentAmount,
-        status: eventData.status,
-        channelId: eventData.channelId,
-        rtmpUrl: eventData.rtmpUrl || eventData.rtmpIngestUrl,
-        rtmpStreamKey: eventData.rtmpStreamKey || eventData.rtmpIngestKey,
-        cloudFrontUrl: eventData.cloudFrontUrl || eventData.cloudfrontUrl,
-        updatedAt: eventData.updatedAt,
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load event details');
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    setError(null);
+
+    const response = await eventApi.getEvent(eventId!);
+    const eventData = response.event || response;
+
+    // --- FIX RTMP URL / KEY EXTRACTION ---
+    let rtmpUrl = null;
+    let rtmpStreamKey = null;
+
+    if (eventData.rtmpInputUrl) {
+      // Example: rtmp://13.204.106.225:1935/live/de7b2ad3-80d7-4080-9e43-085ffc1b3bfb
+      const lastSlashIndex = eventData.rtmpInputUrl.lastIndexOf("/");
+      rtmpUrl = eventData.rtmpInputUrl.substring(0, lastSlashIndex);
+      rtmpStreamKey = eventData.rtmpInputUrl.substring(lastSlashIndex + 1);
     }
-  };
+
+    setEvent({
+      eventId: eventData.eventId || eventData.id,
+      title: eventData.title || eventData.name,
+      description: eventData.description,
+      startTime: eventData.startTime,
+      endTime: eventData.endTime,
+      accessMode: eventData.accessMode || "open",
+      password: eventData.password,
+      paymentAmount: eventData.paymentAmount,
+      status: eventData.status,
+      channelId: eventData.channelId,
+
+      // --- USE FIXED VALUES ---
+      rtmpUrl,
+      rtmpStreamKey,
+
+      cloudFrontUrl: eventData.cloudFrontUrl || eventData.cloudfrontUrl,
+      updatedAt: eventData.updatedAt,
+    });
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Failed to load event details");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleStartChannel = async () => {
     if (!event?.channelId) {
