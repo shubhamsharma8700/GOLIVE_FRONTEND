@@ -21,9 +21,15 @@ import {
   Eye,
   Code,
   Copy,
+  Edit,
+  Power,
+  PowerOff,
+  Info,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { eventApi } from '@/utils/api';
 import { CreateEvent } from './CreateEvent';
+import { EditEvent } from './EditEvent';
 import { VideoPlayer } from '@/components/player/VideoPlayerNew';
 
 // Updated Event interface based on transformed API response
@@ -64,6 +70,7 @@ const mapAccessMode = (type: string): Event['accessMode'] => {
 };
 
 export const EventList: React.FC = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +79,9 @@ export const EventList: React.FC = () => {
   const [showEmbedDialog, setShowEmbedDialog] = useState(false);
   const [currentEmbedCode, setCurrentEmbedCode] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [channelLoading, setChannelLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvents();
@@ -136,6 +146,51 @@ export const EventList: React.FC = () => {
     if (!confirm('Are you sure you want to delete this event?')) return;
     await eventApi.deleteEvent(eventId);
     loadEvents();
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setShowEditDialog(true);
+  };
+
+  const handleStartChannel = async (channelId: string) => {
+    if (!channelId) {
+      alert('No channel ID available for this event');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to start this channel?')) return;
+    
+    try {
+      setChannelLoading(channelId);
+      await eventApi.startChannel(channelId);
+      alert('Channel started successfully!');
+      loadEvents(); // Refresh to update status
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to start channel');
+    } finally {
+      setChannelLoading(null);
+    }
+  };
+
+  const handleStopChannel = async (channelId: string) => {
+    if (!channelId) {
+      alert('No channel ID available for this event');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to stop this channel?')) return;
+    
+    try {
+      setChannelLoading(channelId);
+      await eventApi.stopChannel(channelId);
+      alert('Channel stopped successfully!');
+      loadEvents(); // Refresh to update status
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to stop channel');
+    } finally {
+      setChannelLoading(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -207,7 +262,14 @@ export const EventList: React.FC = () => {
                 {getAccessModeBadge(event.accessMode)}
                 <p className="text-sm text-gray-600">Viewers: {event.viewerCount || 0}</p>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="default" 
+                    onClick={() => navigate(`/admin/event/${event.id}`)}
+                  >
+                    <Info className="w-4 h-4 mr-2" /> Details
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => handlePreview(event)}>
                     <Eye className="w-4 h-4 mr-2" /> Preview
                   </Button>
@@ -216,7 +278,43 @@ export const EventList: React.FC = () => {
                   </Button>
                 </div>
 
+                {event.channelId && (
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="default" 
+                      onClick={() => handleStartChannel(event.channelId!)}
+                      disabled={channelLoading === event.channelId}
+                    >
+                      {channelLoading === event.channelId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Power className="w-4 h-4 mr-2" /> Start
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      onClick={() => handleStopChannel(event.channelId!)}
+                      disabled={channelLoading === event.channelId}
+                    >
+                      {channelLoading === event.channelId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <PowerOff className="w-4 h-4 mr-2" /> Stop
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => handleEditEvent(event)}>
+                    <Edit className="w-4 h-4 mr-2" /> Edit
+                  </Button>
                   <Button size="sm" variant="destructive" onClick={() => handleDeleteEvent(event.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -278,6 +376,36 @@ export const EventList: React.FC = () => {
             <DialogDescription>Fill details to create event</DialogDescription>
           </DialogHeader>
           <CreateEvent onSuccess={() => { setShowCreateDialog(false); loadEvents(); }} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>Update event details</DialogDescription>
+          </DialogHeader>
+          {editingEvent && (
+            <EditEvent
+              eventId={editingEvent.id}
+              initialData={{
+                title: editingEvent.name,
+                description: editingEvent.description,
+                startTime: editingEvent.startTime,
+                accessMode: editingEvent.accessMode,
+              }}
+              onSuccess={() => {
+                setShowEditDialog(false);
+                setEditingEvent(null);
+                loadEvents();
+              }}
+              onCancel={() => {
+                setShowEditDialog(false);
+                setEditingEvent(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

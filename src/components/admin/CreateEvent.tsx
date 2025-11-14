@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { eventApi } from '@/utils/api';
+import { localToUTC } from '@/utils/timezone';
 // import type { title } from 'process';
 
 interface CreateEventProps {
@@ -38,8 +39,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSuccess, onCancel })
       const eventData = {
         title: formData.title,
         description: formData.description || undefined,
-        startTime: formData.startTime,
-        endTime: formData.endTime || undefined,
+        // Convert local time to UTC for database storage
+        startTime: localToUTC(formData.startTime),
+        endTime: formData.endTime ? localToUTC(formData.endTime) : undefined,
         accessMode: formData.accessMode,
         password: formData.accessMode === 'password' ? formData.password : undefined,
         paymentAmount: formData.accessMode === 'payment' ? parseFloat(formData.paymentAmount) : undefined,
@@ -101,7 +103,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSuccess, onCancel })
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time *</Label>
+              <Label htmlFor="startTime">Start Time (Local Time) *</Label>
               <Input
                 id="startTime"
                 type="datetime-local"
@@ -109,16 +111,18 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSuccess, onCancel })
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                 required
               />
+              <p className="text-xs text-gray-500">Time will be saved in UTC</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">End Time (Local Time)</Label>
               <Input
                 id="endTime"
                 type="datetime-local"
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
               />
+              <p className="text-xs text-gray-500">Time will be saved in UTC</p>
             </div>
           </div>
 

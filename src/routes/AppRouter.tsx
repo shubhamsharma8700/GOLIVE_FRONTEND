@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { PlayerPage } from '@/pages/player/PlayerPage';
 import { LoginPage } from '@/pages/admin/LoginPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { EventDetailPage } from '@/pages/admin/EventDetailPage';
 import { useUser } from '@/context/UserContext';
 import { Loader2 } from 'lucide-react';
 
@@ -39,6 +40,14 @@ export const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/event/:eventId"
+        element={
+          <ProtectedRoute>
+            <EventDetailPage />
           </ProtectedRoute>
         }
       />

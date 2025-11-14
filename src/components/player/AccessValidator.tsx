@@ -33,6 +33,7 @@ export const AccessValidator: React.FC<AccessValidatorProps> = ({
   const [loading, setLoading] = useState(true);
   const [eventConfig, setEventConfig] = useState<EventConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [accessGranted, setAccessGranted] = useState(false);
   
   // Form states
   const [email, setEmail] = useState('');
@@ -46,19 +47,42 @@ export const AccessValidator: React.FC<AccessValidatorProps> = ({
   const loadEventConfig = async () => {
     try {
       setLoading(true);
-      const config = await eventApi.getEvent(eventId);
+      const response = await eventApi.getEvent(eventId);
+      
+      // Handle API response structure: { success: true, event: {...} }
+      const event = response.event || response;
+      
+      // Extract CloudFront URL from various possible fields
+      const streamUrl = event.cloudFrontUrl || event.cloudfrontUrl || event.cloudFront || event.streamUrl || event.playbackUrl;
+      
+      // Map API response to EventConfig interface
+      const config: EventConfig = {
+        id: event.eventId || event.id,
+        name: event.title || event.name,
+        accessMode: event.accessMode || 'open',
+        password: event.password || undefined,
+        paymentAmount: event.paymentAmount || undefined,
+        streamUrl: streamUrl || undefined,
+      };
+      
       setEventConfig(config);
 
       // Check if user already has access
       if (hasEventAccess(eventId)) {
-        onAccessGranted(config.streamUrl);
+        if (config.streamUrl) {
+          onAccessGranted(config.streamUrl);
+        }
         return;
       }
 
-      // Open access - grant immediately
+      // Open access - grant immediately and don't show lock UI
       if (config.accessMode === 'open') {
         grantEventAccess(eventId);
-        onAccessGranted(config.streamUrl);
+        setAccessGranted(true);
+        // Always call onAccessGranted for open access, even if no streamUrl yet
+        // Pass empty string if no URL, PlayerPage will handle it
+        onAccessGranted(config.streamUrl || '');
+        return; // Exit early to prevent showing lock UI
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load event configuration');
@@ -141,7 +165,13 @@ export const AccessValidator: React.FC<AccessValidatorProps> = ({
     );
   }
 
-  // Render access form based on mode
+  // Don't show lock UI for open access - access should have been granted
+  // Return null to render nothing (parent will handle the player)
+  if (eventConfig.accessMode === 'open' || accessGranted) {
+    return null;
+  }
+
+  // Render access form based on mode (only for email, password, or payment)
   return (
     <div className="flex items-center justify-center min-h-[400px] p-4">
       <Card className="w-full max-w-md">

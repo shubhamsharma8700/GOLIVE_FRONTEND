@@ -8,6 +8,7 @@ import { PaymentForm } from '@/components/player/PaymentForm';
 import { useUser } from '@/context/UserContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
+import { eventApi } from '@/utils/api';
 
 type PaymentStep = 'registration' | 'payment' | 'complete';
 
@@ -16,7 +17,6 @@ export const PlayerPage: React.FC = () => {
   const { grantEventAccess } = useUser();
 
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
-  const [eventDetails, setEventDetails] = useState<any>(null);
 
   const [showPayment, setShowPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
@@ -30,16 +30,18 @@ export const PlayerPage: React.FC = () => {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await fetch(`/api/admin/event/${eventId}`);
-        const data = await response.json();
+        const data = await eventApi.getEvent(eventId!);
+        
+        // Handle different response structures: { success: true, event: {...} } or direct event
+        const event = data.event || data;
 
-        if (data.success) {
-          setEventDetails(data.event);
-
-          // auto load the stream URL
-          if (data.event.cloudfrontUrl) {
-            setStreamUrl(data.event.cloudfrontUrl);
-          }
+        // For open access events, try to get stream URL immediately
+        // Extract CloudFront URL from various possible fields
+        const cloudFrontUrl = event.cloudFrontUrl || event.cloudfrontUrl || event.cloudFront || event.streamUrl || event.playbackUrl;
+        
+        // If it's open access and we have a URL, set it directly
+        if (event.accessMode === 'open' && cloudFrontUrl) {
+          setStreamUrl(cloudFrontUrl);
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -146,6 +148,9 @@ export const PlayerPage: React.FC = () => {
       </div>
     );
   }
+
+  // For open access events without streamUrl, show loading or message
+  // Don't show AccessValidator for open access
 
   // -------------------------
   // If access not yet granted → Validate

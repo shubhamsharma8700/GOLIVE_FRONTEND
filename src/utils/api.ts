@@ -272,7 +272,8 @@
 
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000";
+// const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://d2wmdj5cojtj0q.cloudfront.net/app";
 
 // Axios instance
 const apiClient = axios.create({
@@ -315,6 +316,11 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  getVodLibrary: async () => {
+    const response = await apiClient.get("/api/admin/vod");
+    return response.data;
+  },
 };
 
 // --------------------------------------------------------
@@ -346,9 +352,24 @@ export const eventApi = {
     return response.data;
   },
   getEvent: async (eventId: string) => {
-    const response = await apiClient.get(`/api/event/event/${eventId}`);
+    const response = await apiClient.get(`/api/admin/event/event/${eventId}`);
     return response.data;
-  }
+  },
+
+  // Channel control
+  startChannel: async (channelId: string) => {
+    const response = await apiClient.post("/api/admin/event/channel/start", {
+      channelId,
+    });
+    return response.data;
+  },
+
+  stopChannel: async (channelId: string) => {
+    const response = await apiClient.post("/api/admin/event/channel/stop", {
+      channelId,
+    });
+    return response.data;
+  },
 };
 
 // --------------------------------------------------------
@@ -380,8 +401,28 @@ export const analyticsApi = {
     return response.data;
   },
 
-  getDashboardAnalytics: async () => {
-    const response = await apiClient.get(`/api/analytics/dashboard`);
+  getDashboardAnalytics: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    eventIds?: string[];
+  }) => {
+    const response = await apiClient.get(`/api/analytics/dashboard`, {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  trackEvent: async (analyticsData: {
+    eventId: string;
+    userId?: string;
+    action: string;
+    timestamp: number;
+    duration?: number;
+    deviceType?: string;
+    browser?: string;
+    metadata?: Record<string, any>;
+  }) => {
+    const response = await apiClient.post('/api/analytics', analyticsData);
     return response.data;
   },
 };

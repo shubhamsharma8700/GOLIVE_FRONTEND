@@ -11,4 +11,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    host: "0.0.0.0",  // <-- Required for EC2
+    port: 5173,        // <-- Your port
+  },
 });
