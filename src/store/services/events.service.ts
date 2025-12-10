@@ -2,47 +2,103 @@ import { baseApi } from "./baseApi";
 
 export const eventsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getEvents: builder.query({
-      query: () => "/events",
+
+    // ------------------------------------------------------
+    // LIST EVENTS (with search, type, limit)
+    // ------------------------------------------------------
+    listEvents: builder.query({
+      query: ({
+        limit,
+        lastKey,
+        q,
+        type,
+      }: {
+        limit?: number;
+        lastKey?: string;
+        q?: string;
+        type?: "live" | "vod";
+      } = {}) => {
+        const params = new URLSearchParams();
+
+        if (limit) params.append("limit", String(limit));
+        if (lastKey) params.append("lastKey", lastKey);
+        if (q) params.append("q", q);
+        if (type) params.append("type", type);
+
+        const qs = params.toString();
+        return `/events${qs ? `?${qs}` : ""}`;
+      },
       providesTags: ["Events"],
     }),
 
+    // ------------------------------------------------------
+    // GET EVENT BY ID
+    // ------------------------------------------------------
     getEventById: builder.query({
-      query: (id) => `/events/${id}`,
+      query: (eventId: string) => `/events/${eventId}`,
       providesTags: ["Events"],
     }),
 
+    // ------------------------------------------------------
+    // GET PRESIGN URL FOR VOD UPLOAD
+    // ------------------------------------------------------
+    getPresignedVodUrl: builder.mutation({
+      query: ({
+        filename,
+        contentType,
+      }: {
+        filename: string;
+        contentType?: string;
+      }) => ({
+        url: `/events/vod/presign?filename=${encodeURIComponent(
+          filename
+        )}&contentType=${contentType || "video/mp4"}`,
+        method: "GET",
+      }),
+    }),
+
+    // ------------------------------------------------------
+    // CREATE EVENT
+    // ------------------------------------------------------
     createEvent: builder.mutation({
-      query: (data) => ({
-        url: "/events",
+      query: (body: any) => ({
+        url: `/events`,
         method: "POST",
-        body: data,
+        body,
       }),
       invalidatesTags: ["Events"],
     }),
 
+    // ------------------------------------------------------
+    // UPDATE EVENT
+    // ------------------------------------------------------
     updateEvent: builder.mutation({
-      query: ({ id, data }) => ({
-        url: `/events/${id}`,
+      query: ({ eventId, ...body }: { eventId: string;[key: string]: any }) => ({
+        url: `/events/${eventId}`,
         method: "PUT",
-        body: data,
+        body,
       }),
       invalidatesTags: ["Events"],
     }),
 
+    // ------------------------------------------------------
+    // DELETE EVENT
+    // ------------------------------------------------------
     deleteEvent: builder.mutation({
-      query: (id) => ({
-        url: `/events/${id}`,
+      query: (eventId: string) => ({
+        url: `/events/${eventId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Events"],
     }),
+
   }),
 });
 
 export const {
-  useGetEventsQuery,
+  useListEventsQuery,
   useGetEventByIdQuery,
+  useGetPresignedVodUrlMutation,
   useCreateEventMutation,
   useUpdateEventMutation,
   useDeleteEventMutation,

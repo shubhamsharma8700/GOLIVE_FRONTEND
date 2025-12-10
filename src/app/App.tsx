@@ -3,7 +3,7 @@ import DashboardLayout from "../layout/DashboardLayout";
 import Login from "../pages/Login";
 import ForgotPassword from "../pages/ForgotPassword";
 import DashboardOverview from "../pages/DashboardOverview";
-import {EventManagement} from "../pages/EventManagement";
+import EventManagement from "../pages/EventManagement";
 // import CreateEvent from "../pages/CreateEvent";
 import {UserManagement} from "../pages/UserManagement";
 // import ViewersManagement from "../pages/ViewersManagement";
