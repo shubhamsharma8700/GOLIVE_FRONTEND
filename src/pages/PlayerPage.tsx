@@ -18,8 +18,8 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { loadEvent } from "../store/slices/eventSlice";
 
 // Access overlays
-import EmailOverlay from "../components/player/EmailAccessOverlay";
-import PasswordOverlay from "../components/player/EmailPasswordAccessOverlay";
+import EmailOverlay from "../components/player/EmailOverlay";
+import PasswordOverlay from "../components/player/PasswordAccessOverlay";
 import PaymentOverlay from "../components/player/PaymentAccessOverlay";
 
 type AccessType = "open-source" | "email" | "email-password" | "payment";
@@ -223,20 +223,39 @@ player.ready(() => {
     };
   }, [event, hasAccess]);
 
-  /* -----------------------------------------
-      ACCESS OVERLAY
-  ----------------------------------------- */
-  let overlay = null;
-  if (!hasAccess) {
-    if (accessType === "email")
-      overlay = <EmailOverlay onAccessGranted={() => setHasAccess(true)} />;
-    if (accessType === "email-password")
-      overlay = (
-        <PasswordOverlay onAccessGranted={() => setHasAccess(true)} />
-      );
-    if (accessType === "payment")
-      overlay = <PaymentOverlay onAccessGranted={() => setHasAccess(true)} />;
-  }
+/* -----------------------------------------
+    ACCESS OVERLAY
+----------------------------------------- */
+let overlay = null;
+
+if (accessType === "email") {
+  overlay = (
+    <EmailOverlay
+      open={!hasAccess}
+      onAccessGranted={() => setHasAccess(true)}
+    />
+  );
+}
+
+if (accessType === "email-password") {
+  overlay = (
+    <PasswordOverlay
+      open={!hasAccess}
+      onAccessGranted={() => setHasAccess(true)}
+    />
+  );
+}
+
+if (accessType === "payment") {
+  overlay = (
+    <PaymentOverlay
+      open={!hasAccess}
+      onAccessGranted={() => setHasAccess(true)}
+    />
+  );
+}
+
+
 
   if (isLoading) return <div className="p-6">Loading event...</div>;
 
