@@ -96,26 +96,96 @@ export default function PlayerPage() {
     }
 
     // INIT PLAYER
+    // const player = videojs(videoRef.current, {
+    //   autoplay: hasAccess ? "any" : false,
+    //   muted: true,
+    //   controls: true,
+    //   playsinline: true,
+    //   fluid: true,
+    //   responsive: true,
+    //   aspectRatio: "16:9",
+
+    //   liveui: true,
+    //   enableSmoothSeeking: true,
+
+    //   controlBar: {
+    //     volumePanel: { inline: false },
+    //     remainingTimeDisplay: { displayNegative: false },
+    //     skipButtons: { forward: 10, backward: 10 },
+    //   },
+
+    //   html5: { vhs: { overrideNative: true } },
+    // });
     const player = videojs(videoRef.current, {
-      autoplay: hasAccess ? "any" : false,
-      muted: true,
-      controls: true,
-      playsinline: true,
-      fluid: true,
-      responsive: true,
-      aspectRatio: "16:9",
+  autoplay: hasAccess ? "any" : false,
+  muted: false,
+  controls: true,
+  playsinline: true,
+  preload: "auto",
 
-      liveui: true,
-      enableSmoothSeeking: true,
+  fluid: true,
+  responsive: true,
+  aspectRatio: "16:9",
 
-      controlBar: {
-        volumePanel: { inline: false },
-        remainingTimeDisplay: { displayNegative: false },
-        skipButtons: { forward: 10, backward: 10 },
-      },
+  liveui: true,
+  enableSmoothSeeking: true,
 
-      html5: { vhs: { overrideNative: true } },
-    });
+  // Advanced control bar
+  controlBar: {
+    volumePanel: { inline: false },
+    remainingTimeDisplay: { displayNegative: false },
+
+    skipButtons: {
+      forward: 10,
+      backward: 10,
+    },
+
+    playbackRateMenuButton: true,
+    pictureInPictureToggle: true,
+    fullscreenToggle: true,
+  },
+
+  html5: {
+    vhs: {
+      overrideNative: true,
+      smoothQualityChange: true,   // smoother ABR switching
+    },
+  },
+
+  // Spatial Navigation (Smart TVs / Remote Controls)
+  spatialNavigation: {
+    enabled: true,
+    horizontalSeek: true,
+  },
+
+  // Improve UI responsiveness breakpoints
+  breakpoints: {
+    medium: 600,
+    large: 1000,
+    huge: 1400,
+  },
+
+  // User actions (mouse, keyboard)
+  userActions: {
+    doubleClick: true, // fullscreen on double click
+    click: true,       // pause/play on click
+
+    hotkeys: {
+      // Space / K pause toggle (default)
+      playPauseKey: (e: KeyboardEvent) => e.key === "k" || e.key === " ",
+
+      // F fullscreen toggle
+      fullscreenKey: (e: KeyboardEvent) => e.key === "f",
+
+      // M mute toggle
+      muteKey: (e: KeyboardEvent) => e.key === "m",
+    },
+  },
+
+  // Poster hidden until playback
+  posterImage: true,
+});
+
 
     playerRef.current = player;
 
@@ -175,37 +245,23 @@ player.ready(() => {
   /* -----------------------------------------
       RENDER PLAYER + EVENT INFO
   ----------------------------------------- */
-  return (
-    <div className="min-h-screen w-full flex flex-col items-center bg-gray-950 p-6 text-white">
-
-      <h1 className="text-xl font-semibold mb-4">
-        Testing Player for Event: {event?.title}
-      </h1>
-
-      <div className="w-full max-w-[1300px]">
-        <div
-          className="relative w-full bg-black rounded-xl shadow-xl overflow-hidden"
-          style={{ aspectRatio: "16/9" }}
-        >
-          {/* PLAYER */}
-          <video
-            ref={videoRef}
-            className="video-js vjs-default-skin vjs-big-play-centered w-full h-full"
-          />
-          {overlay}
-        </div>
-      </div>
-
-      <div className="mt-6 w-full max-w-[800px] bg-gray-800 p-4 rounded">
-        <h2 className="text-lg mb-2">Event Data</h2>
-
-        <p><strong>Event Type:</strong> {event?.eventType}</p>
-        <p><strong>Status:</strong> {event?.status}</p>
-        <p><strong>Description:</strong> {event?.description}</p>
-
-        <p className="mt-2"><strong>Resolved Playback URL:</strong></p>
-        <p className="text-blue-400 break-all">{playbackUrl}</p>
-      </div>
+return (
+  <div className="h-screen w-full bg-gray-950 text-white overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-8">
+    <div
+      className="relative w-full bg-black rounded-xl shadow-xl overflow-hidden"
+      style={{ 
+        aspectRatio: "16/9",
+        maxWidth: "75%",
+        maxHeight: "100%"
+      }}
+    >
+      {/* PLAYER */}
+      <video
+        ref={videoRef}
+        className="video-js vjs-default-skin vjs-big-play-centered w-full h-full object-contain"
+      />
+      {overlay}
     </div>
-  );
+  </div>
+);
 }
