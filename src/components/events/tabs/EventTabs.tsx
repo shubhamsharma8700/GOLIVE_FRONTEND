@@ -1,56 +1,68 @@
+// src/features/events/tabs/EventTabs.tsx
+
 import { type ReactElement } from "react";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../../../components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+
+// Icons
+import { FileText, Video, ShieldCheck } from "lucide-react";
 
 interface EventTabsProps {
-  children: ReactElement[]; // must receive exactly: [detailsTab, videoTab(or null), accessTab]
+  children: ReactElement[]; // expected: [Details, Video, Access]
 }
 
 export default function EventTabs({ children }: EventTabsProps) {
-  // children[0] = EventDetailsTab
-  // children[1] = VideoConfigTab (can be null for VOD)
-  // children[2] = AccessSecurityTab
+  const eventType = useAppSelector((s) => s.eventForm.eventType);
 
-  const [detailsTab, videoTab, accessTab] = children;
-
-  // Build tab config dynamically → hides video tab if videoTab === null
-  const visibleTabs = [
-    { id: "details", label: "Event Details", content: detailsTab },
-    ...(videoTab ? [{ id: "video", label: "Video Config", content: videoTab }] : []),
-    { id: "access", label: "Access & Security", content: accessTab },
+  // ----------------------------------------------------
+  // TAB CONFIG (with icons)
+  // ----------------------------------------------------
+  const baseTabs = [
+    { id: "details", label: "Event Details", icon: FileText },
+    { id: "video", label: "Video Config", icon: Video },
+    { id: "access", label: "Access & Security", icon: ShieldCheck },
   ];
 
+  // When VOD → remove Video Config tab entirely
+  const visibleTabs = eventType === "vod"
+    ? baseTabs.filter((t) => t.id !== "video")
+    : baseTabs;
+
+  // Children mapping
+  const tabContentMap: Record<string, ReactElement> = {
+    details: children[0],
+    video: children[1],
+    access: children[2],
+  };
+
   return (
-    <Tabs defaultValue="details" className="space-y-6">
-      {/* ------------------------------ */}
-      {/*          TAB HEADERS           */}
-      {/* ------------------------------ */}
-      <TabsList className="bg-white border rounded-md">
-        {visibleTabs.map((tab) => (
-          <TabsTrigger
-            key={tab.id}
-            value={tab.id}
-            className="
-              data-[state=active]:bg-[#B89B5E]
-              data-[state=active]:text-white
-              px-4 py-2
-            "
-          >
-            {tab.label}
-          </TabsTrigger>
-        ))}
+    <Tabs defaultValue={visibleTabs[0].id} className="space-y-6">
+
+      {/* TAB LIST */}
+      <TabsList className="bg-white border">
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="
+                flex items-center gap-2
+                data-[state=active]:bg-[#B89B5E]
+                data-[state=active]:text-white
+              "
+            >
+              <Icon size={16} />
+              {tab.label}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
 
-      {/* ------------------------------ */}
-      {/*          TAB CONTENT            */}
-      {/* ------------------------------ */}
+      {/* TAB CONTENT */}
       {visibleTabs.map((tab) => (
         <TabsContent key={tab.id} value={tab.id}>
-          {tab.content}
+          {tabContentMap[tab.id]}
         </TabsContent>
       ))}
     </Tabs>

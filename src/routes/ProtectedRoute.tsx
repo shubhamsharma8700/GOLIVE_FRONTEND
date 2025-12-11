@@ -1,3 +1,4 @@
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppSelector } from "../hooks/useAppSelector";
@@ -5,7 +6,7 @@ import { useGetProfileQuery } from "../store/services/auth.service";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { setProfile, logout } from "../store/slices/authSlice";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const token = useAppSelector((s) => s.auth.token);
 

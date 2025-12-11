@@ -1,7 +1,7 @@
 // src/features/events/EventManagementPage.tsx
 
 import { useState } from "react";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 

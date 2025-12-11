@@ -9,7 +9,7 @@ import {UserManagement} from "../pages/UserManagement";
 // import ViewersManagement from "../pages/ViewersManagement";
 // import ReportsAnalytics from "../pages/ReportsAnalytics";
 // import VODLibrary from "../pages/VODLibrary";
-// import PlayerPage from "../pages/PlayerPage";
+import PlayerPage from "../pages/PlayerPage";
 import ProtectedRoute from "../routes/ProtectedRoute";
 import NewPassword from "../pages/NewPassword";
 
@@ -22,6 +22,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/new-password" element={<NewPassword />} />
+      <Route path="/player" element={<PlayerPage />} />
+
 
       {/* Protected dashboard routes */}
       <Route

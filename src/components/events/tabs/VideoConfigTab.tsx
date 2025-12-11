@@ -20,15 +20,46 @@ export default function VideoConfigTab() {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
 
-  // 👉 HIDE THIS ENTIRE TAB for VOD EVENTS
+  // ------------------------------------------------------------
+  // Hide whole tab when eventType === "vod"
+  // ------------------------------------------------------------
   if (form.eventType === "vod") return null;
+
+  // ------------------------------------------------------------
+  // Helper to update nested JSON config object
+  // ------------------------------------------------------------
+  const updateVideoConfig = (path: string, value: any) => {
+    const config = form.videoConfig || {
+      resolution: "1080p",
+      frameRate: "30",
+      bitrate: "medium",
+      pixel: { provider: "none", id: "" },
+    };
+
+    const updated = { ...config } as any;
+
+    if (path.startsWith("pixel.")) {
+      const key = path.split(".")[1];
+      updated.pixel = { 
+        provider: updated.pixel?.provider ?? "none", 
+        id: updated.pixel?.id ?? "", 
+        [key]: value 
+      };
+    } else {
+      updated[path] = value;
+    }
+
+    dispatch(updateField({ key: "videoConfig", value: updated }));
+  };
+
+  const config = form.videoConfig || {};
 
   return (
     <div className="space-y-10">
 
-      {/* --------------------------------------------- */}
-      {/*   VIDEO QUALITY SETTINGS (FIGMA STYLE)        */}
-      {/* --------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/*                 VIDEO QUALITY SETTINGS (Figma Style)               */}
+      {/* ------------------------------------------------------------------ */}
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold mb-1">Video Quality Settings</h3>
@@ -40,13 +71,11 @@ export default function VideoConfigTab() {
         <div className="grid grid-cols-3 gap-6">
 
           {/* Resolution */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Resolution</Label>
             <Select
-              value={form.videoResolution ?? "1080p"}
-              onValueChange={(v) =>
-                dispatch(updateField({ key: "videoResolution", value: v }))
-              }
+              value={config.resolution ?? "1080p"}
+              onValueChange={(v) => updateVideoConfig("resolution", v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select Resolution" />
@@ -62,13 +91,11 @@ export default function VideoConfigTab() {
           </div>
 
           {/* Frame Rate */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Frame Rate</Label>
             <Select
-              value={form.frameRate ?? "30"}
-              onValueChange={(v) =>
-                dispatch(updateField({ key: "frameRate", value: v }))
-              }
+              value={config.frameRate ?? "30"}
+              onValueChange={(v) => updateVideoConfig("frameRate", v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select FPS" />
@@ -82,13 +109,11 @@ export default function VideoConfigTab() {
           </div>
 
           {/* Bitrate */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Bitrate</Label>
             <Select
-              value={form.bitrate ?? "medium"}
-              onValueChange={(v) =>
-                dispatch(updateField({ key: "bitrate", value: v }))
-              }
+              value={config.bitrate ?? "medium"}
+              onValueChange={(v) => updateVideoConfig("bitrate", v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select Bitrate" />
@@ -100,14 +125,13 @@ export default function VideoConfigTab() {
               </SelectContent>
             </Select>
           </div>
-
         </div>
       </div>
 
-      {/* --------------------------------------------- */}
-      {/*        TRACKING PIXELS SECTION                */}
-      {/* --------------------------------------------- */}
-      <div className="space-y-4 border-t pt-6">
+      {/* ------------------------------------------------------------------ */}
+      {/*                      TRACKING PIXELS (Optional)                    */}
+      {/* ------------------------------------------------------------------ */}
+      <div className="space-y-4 pt-6">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="mb-1">Tracking Pixels (Optional)</h3>
@@ -115,17 +139,18 @@ export default function VideoConfigTab() {
               Add tracking pixels for analytics if required
             </p>
           </div>
+
           <Badge className="bg-gray-100 text-gray-600">Optional</Badge>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
+
+          {/* Pixel Provider */}
           <div className="space-y-2">
             <Label>Pixel Provider</Label>
             <Select
-              value={form.pixelProvider ?? "none"}
-              onValueChange={(v) =>
-                dispatch(updateField({ key: "pixelProvider", value: v }))
-              }
+              value={config.pixel?.provider ?? "none"}
+              onValueChange={(v) => updateVideoConfig("pixel.provider", v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select provider" />
@@ -141,15 +166,14 @@ export default function VideoConfigTab() {
             </Select>
           </div>
 
+          {/* Pixel ID */}
           <div className="space-y-2">
             <Label>Pixel ID / Tracking Code</Label>
             <Input
               placeholder="Enter tracking code"
               className="font-mono text-sm"
-              value={form.pixelId ?? ""}
-              onChange={(e) =>
-                dispatch(updateField({ key: "pixelId", value: e.target.value }))
-              }
+              value={config.pixel?.id ?? ""}
+              onChange={(e) => updateVideoConfig("pixel.id", e.target.value)}
             />
           </div>
         </div>

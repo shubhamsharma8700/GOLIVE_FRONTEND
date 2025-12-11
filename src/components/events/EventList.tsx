@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 
 export default function EventList({
-  onCreate,
+  // onCreate,
   onEdit,
   onView,
   searchQuery,

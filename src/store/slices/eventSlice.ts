@@ -1,7 +1,11 @@
 // src/features/events/eventSlice.ts
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-export type AccessMode = "freeAccess" | "emailAccess" | "passwordAccess" | "paidAccess";
+export type AccessMode =
+  | "freeAccess"
+  | "emailAccess"
+  | "passwordAccess"
+  | "paidAccess";
 
 export interface RegistrationField {
   id: string;
@@ -10,37 +14,79 @@ export interface RegistrationField {
   required: boolean;
 }
 
+export interface VideoConfig {
+  resolution?: string | null;
+  frameRate?: string | null;
+  bitrate?: string | null;
+  pixel?: {
+    provider: string;
+    id: string;
+  };
+}
+
 export interface EventFormState {
   mode: "create" | "update";
   eventId: string | null;
-  // core event fields
+
   title: string;
   description: string;
   eventType: "live" | "vod";
   accessMode: AccessMode;
+
   startTime?: string | null;
   endTime?: string | null;
+
   s3Key?: string | null;
   s3Prefix?: string | null;
-  // dynamic registration
+
+  videoConfig: VideoConfig;
   registrationFields: RegistrationField[];
-  // payment
+
   paymentAmount?: number | null;
   currency?: string | null;
-  // passwordAccess
-  accessPasswordHash?: string | null; // store only hashed on backend — this is optional for UI
-  // vod upload status
+  accessPasswordHash?: string | null;
+
   vodUpload: {
     fileName?: string | null;
     progress: number;
     uploading: boolean;
     error?: string | null;
   };
-  // generic meta
+
   status?: string | null;
   createdBy?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+
+  playbackUrl?: string | null;
+  playbackMode?: "live" | "vod";
+  watchStartTime?: string | null;
+  isWatching?: boolean;
+
+  // LIVE fields
+  cloudFrontUrl?: string | null;
+  mediaPackageUrl?: string | null;
+  rtmpInputUrl?: string | null;
+  mediaLiveChannelId?: string | null;
+  mediaLiveInputId?: string | null;
+  mediaLiveInputSecurityGroupId?: string | null;
+  mediaPackageChannelId?: string | null;
+  mediaPackageEndpointId?: string | null;
+  originId?: string | null;
+  distributionId?: string | null;
+  channelState?: string | null;
+  vodcloudFrontUrl?: string | null;
+
+  // VOD fields
+  vodCloudFrontUrl?: string | null;
+  vod1080pUrl?: string | null;
+  vod720pUrl?: string | null;
+  vod480pUrl?: string | null;
+  vodStatus?: string | null;
+  vodJobId?: string | null;
+  vodOutputPath?: string | null;
+  vodProcessingStartTime?: string | null;
+  vodSourceType?: string | null;
 }
 
 const defaultRegistrationFields: RegistrationField[] = [
@@ -60,85 +106,188 @@ const initialState: EventFormState = {
   endTime: null,
   s3Key: null,
   s3Prefix: null,
-  registrationFields: defaultRegistrationFields,
+
+  videoConfig: {
+    resolution: "1080p",
+    frameRate: "30",
+    bitrate: "medium",
+    pixel: { provider: "none", id: "" },
+  },
+
+  registrationFields: defaultRegistrationFields.slice(),
   paymentAmount: null,
   currency: null,
   accessPasswordHash: null,
+
   vodUpload: { fileName: null, progress: 0, uploading: false, error: null },
+
   status: null,
   createdBy: null,
   createdAt: null,
   updatedAt: null,
+
+  playbackUrl: null,
+  playbackMode: "live",
+  watchStartTime: null,
+  isWatching: false,
 };
 
 const slice = createSlice({
   name: "eventForm",
   initialState,
   reducers: {
-    // Simple field updater
-    updateField<T extends keyof EventFormState>(state: EventFormState, action: PayloadAction<{ key: T; value: EventFormState[T] }>) {
+    updateField(state, action: PayloadAction<{ key: keyof EventFormState; value: any }>) {
       const { key, value } = action.payload;
-      // @ts-ignore assignment by key
+      // @ts-ignore
       state[key] = value;
       state.updatedAt = new Date().toISOString();
     },
 
-    // Bulk replace (used for loading existing event)
-    loadEvent(state, action: PayloadAction<Partial<EventFormState> & { eventId?: string }>) {
+    updateVideoConfig(state, action: PayloadAction<Partial<VideoConfig>>) {
+      state.videoConfig = { ...state.videoConfig, ...action.payload };
+      state.updatedAt = new Date().toISOString();
+    },
+
+    /* ===================================================================
+       LOAD EVENT — UPDATED LOGIC:
+       eventType=live → play live URL
+       eventType=vod  → play vod URL
+    =================================================================== */
+    loadEvent(
+      state,
+      action: PayloadAction<Partial<EventFormState> & { eventId?: string }>
+    ) {
       const payload = action.payload;
+
       state.mode = payload.eventId ? "update" : "create";
       state.eventId = payload.eventId ?? null;
-      state.title = (payload.title ?? state.title) as string;
-      state.description = (payload.description ?? state.description) as string;
-      state.eventType = (payload.eventType ?? state.eventType) as "live" | "vod";
-      state.accessMode = (payload.accessMode ?? state.accessMode) as AccessMode;
+
+      state.title = payload.title ?? state.title;
+      state.description = payload.description ?? state.description;
+      state.eventType = payload.eventType ?? state.eventType;
+      state.accessMode = payload.accessMode ?? state.accessMode;
+
       state.startTime = payload.startTime ?? state.startTime;
       state.endTime = payload.endTime ?? state.endTime;
-      state.s3Key = payload.s3Key ?? state.s3Key;
-      state.s3Prefix = payload.s3Prefix ?? state.s3Prefix;
-      state.registrationFields = payload.registrationFields ?? state.registrationFields;
+
+      if (payload.videoConfig) {
+        state.videoConfig = { ...state.videoConfig, ...payload.videoConfig };
+      }
+
+      // LIVE fields
+      state.cloudFrontUrl = payload.cloudFrontUrl ?? null;
+      state.mediaPackageUrl = payload.mediaPackageUrl ?? null;
+      state.rtmpInputUrl = payload.rtmpInputUrl ?? null;
+      state.mediaLiveChannelId = payload.mediaLiveChannelId ?? null;
+      state.mediaLiveInputId = payload.mediaLiveInputId ?? null;
+      state.mediaLiveInputSecurityGroupId =
+        payload.mediaLiveInputSecurityGroupId ?? null;
+      state.mediaPackageChannelId = payload.mediaPackageChannelId ?? null;
+      state.mediaPackageEndpointId = payload.mediaPackageEndpointId ?? null;
+      state.originId = payload.originId ?? null;
+      state.distributionId = payload.distributionId ?? null;
+      state.channelState = payload.channelState ?? null;
+      state.vodcloudFrontUrl = payload.vodcloudFrontUrl ?? null;
+
+      // VOD fields
+      state.vodCloudFrontUrl = payload.vodCloudFrontUrl ?? null;
+      state.vod1080pUrl = payload.vod1080pUrl ?? null;
+      state.vod720pUrl = payload.vod720pUrl ?? null;
+      state.vod480pUrl = payload.vod480pUrl ?? null;
+      state.vodStatus = payload.vodStatus ?? null;
+      state.vodJobId = payload.vodJobId ?? null;
+      state.vodOutputPath = payload.vodOutputPath ?? null;
+      state.vodProcessingStartTime = payload.vodProcessingStartTime ?? null;
+      state.vodSourceType = payload.vodSourceType ?? null;
+
+      // Registration
+      if (payload.registrationFields) {
+        state.registrationFields = payload.registrationFields;
+      }
+
       state.paymentAmount = payload.paymentAmount ?? state.paymentAmount;
       state.currency = payload.currency ?? state.currency;
-      state.accessPasswordHash = payload.accessPasswordHash ?? state.accessPasswordHash;
+      state.accessPasswordHash =
+        payload.accessPasswordHash ?? state.accessPasswordHash;
+
+      // Meta
       state.status = payload.status ?? state.status;
       state.createdBy = payload.createdBy ?? state.createdBy;
       state.createdAt = payload.createdAt ?? state.createdAt;
-      state.updatedAt = payload.updatedAt ?? new Date().toISOString();
-      // reset vod upload status if provided
+      state.updatedAt = new Date().toISOString();
+
+      // -------------------------------------------------------
+      // NEW SIMPLE PLAYBACK LOGIC (NO status/channelState logic)
+      // -------------------------------------------------------
+
+      const liveUrl = payload.cloudFrontUrl || payload.vodcloudFrontUrl || null;
+
+      const vodUrl =
+        payload.vodCloudFrontUrl ||
+        payload.vod1080pUrl ||
+        payload.vod720pUrl ||
+        payload.vod480pUrl ||
+        null;
+
+      if (payload.eventType === "live") {
+        state.playbackMode = "live";
+        state.playbackUrl = liveUrl;
+      } else {
+        state.playbackMode = "vod";
+        state.playbackUrl = vodUrl;
+      }
+
+      // VOD upload
       if (payload.s3Key) {
-        state.vodUpload = { fileName: null, progress: 100, uploading: false, error: null };
+        state.vodUpload = {
+          fileName: payload.s3Key,
+          progress: 100,
+          uploading: false,
+          error: null,
+        };
       }
     },
 
-    // reset to initial
     resetForm(state) {
       Object.assign(state, initialState);
     },
 
-    // Registration fields actions
     addRegistrationField(state, action: PayloadAction<RegistrationField>) {
       state.registrationFields.push(action.payload);
       state.updatedAt = new Date().toISOString();
     },
 
     removeRegistrationField(state, action: PayloadAction<string>) {
-      state.registrationFields = state.registrationFields.filter((f) => f.id !== action.payload);
+      state.registrationFields = state.registrationFields.filter(
+        (f) => f.id !== action.payload
+      );
       state.updatedAt = new Date().toISOString();
     },
 
-    updateRegistrationField(state, action: PayloadAction<{ id: string; changes: Partial<RegistrationField> }>) {
+    updateRegistrationField(
+      state,
+      action: PayloadAction<{ id: string; changes: Partial<RegistrationField> }>
+    ) {
       const { id, changes } = action.payload;
       const idx = state.registrationFields.findIndex((f) => f.id === id);
       if (idx !== -1) {
-        state.registrationFields[idx] = { ...state.registrationFields[idx], ...changes };
-        state.updatedAt = new Date().toISOString();
+        state.registrationFields[idx] = {
+          ...state.registrationFields[idx],
+          ...changes,
+        };
       }
+      state.updatedAt = new Date().toISOString();
     },
 
-    // VOD upload progress
-    setVodUploadProgress(state, action: PayloadAction<{ progress: number; uploading?: boolean }>) {
+    setVodUploadProgress(
+      state,
+      action: PayloadAction<{ progress: number; uploading?: boolean }>
+    ) {
       state.vodUpload.progress = action.payload.progress;
-      if (action.payload.uploading !== undefined) state.vodUpload.uploading = action.payload.uploading;
+      if (action.payload.uploading !== undefined) {
+        state.vodUpload.uploading = action.payload.uploading;
+      }
+      state.updatedAt = new Date().toISOString();
     },
 
     setVodUploadFile(state, action: PayloadAction<{ fileName: string }>) {
@@ -146,24 +295,48 @@ const slice = createSlice({
       state.vodUpload.progress = 0;
       state.vodUpload.uploading = true;
       state.vodUpload.error = null;
+      state.updatedAt = new Date().toISOString();
     },
 
     setVodUploadError(state, action: PayloadAction<string | null>) {
       state.vodUpload.error = action.payload;
       state.vodUpload.uploading = false;
+      state.updatedAt = new Date().toISOString();
     },
 
-    setVodS3Key(state, action: PayloadAction<{ s3Key: string; s3Prefix?: string }>) {
+    setVodS3Key(
+      state,
+      action: PayloadAction<{ s3Key: string; s3Prefix?: string | null }>
+    ) {
       state.s3Key = action.payload.s3Key;
-      state.s3Prefix = action.payload.s3Prefix ?? (action.payload.s3Key.substring(0, action.payload.s3Key.lastIndexOf("/") + 1) || null);
-      state.vodUpload.progress = 100;
-      state.vodUpload.uploading = false;
+      state.s3Prefix = action.payload.s3Prefix ?? null;
+      state.vodUpload = {
+        fileName: null,
+        progress: 100,
+        uploading: false,
+        error: null,
+      };
+      state.updatedAt = new Date().toISOString();
+    },
+
+    setPlaybackMode(state, action: PayloadAction<"live" | "vod">) {
+      state.playbackMode = action.payload;
+      state.updatedAt = new Date().toISOString();
+    },
+
+    setWatchingState(state, action: PayloadAction<boolean>) {
+      state.isWatching = action.payload;
+      if (action.payload) {
+        state.watchStartTime = new Date().toISOString();
+      }
+      state.updatedAt = new Date().toISOString();
     },
   },
 });
 
 export const {
   updateField,
+  updateVideoConfig,
   loadEvent,
   resetForm,
   addRegistrationField,
@@ -173,6 +346,8 @@ export const {
   setVodUploadFile,
   setVodUploadError,
   setVodS3Key,
+  setPlaybackMode,
+  setWatchingState,
 } = slice.actions;
 
 export default slice.reducer;

@@ -5,14 +5,21 @@ import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
-import { updateField, setVodUploadProgress, setVodUploadError } from "../../../store/slices/eventSlice";
+
+import {
+  updateField,
+  setVodUploadFile,
+  setVodUploadProgress,
+  setVodUploadError,
+  setVodS3Key,
+} from "../../../store/slices/eventSlice";
 
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from "../../ui/select";
 
 import { Video, Upload, Info } from "lucide-react";
@@ -23,89 +30,98 @@ export default function EventDetailsTab() {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
 
-  const fileRef = useRef<HTMLInputElement | null>(null);
-
-  // RTK Query mutation
   const [getPresign] = useGetPresignedVodUrlMutation();
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // ----------------------------
-  // HANDLE FILE SELECTION
-  // ----------------------------
+  // ----------------------------------------------------------
+  // HANDLE FILE SELECT
+  // ----------------------------------------------------------
   const handleSelect = (file?: File | null) => {
     if (!file) return;
+
     setSelectedFile(file);
 
-    // Show file name in UI
+    dispatch(
+      setVodUploadFile({
+        fileName: file.name,
+      })
+    );
+
+    // Show file name immediately (actual S3 key will update after upload)
     dispatch(updateField({ key: "s3Key", value: file.name }));
   };
 
-  // ----------------------------
-  // UPLOAD TO S3 USING PRESIGN URL
-  // ----------------------------
+  // ----------------------------------------------------------
+  // HANDLE UPLOAD USING PRESIGNED URL
+  // ----------------------------------------------------------
   const handleUpload = async () => {
     if (!selectedFile) {
-      dispatch(setVodUploadError("No file selected."));
+      dispatch(setVodUploadError("No file selected"));
       return;
     }
 
     try {
-      dispatch(setVodUploadError(""));
-      dispatch(setVodUploadProgress(0));
+      dispatch(setVodUploadError(null));
+      dispatch(setVodUploadProgress({ progress: 0, uploading: true }));
 
-      // Step 1: Ask Backend for Presigned URL
+      // 1. Get presigned URL
       const presign = await getPresign({
         filename: selectedFile.name,
         contentType: selectedFile.type,
       }).unwrap();
 
       const uploadUrl = presign.uploadUrl;
-      const s3Key = presign.fileKey;
+      const fileKey = presign.fileKey;
 
-      // Step 2: Upload to S3 via PUT
+      // 2. Upload using XHR (allows progress tracking)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", uploadUrl, true);
         xhr.setRequestHeader("Content-Type", selectedFile.type);
 
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            dispatch(setVodUploadProgress(percent));
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            dispatch(updateField({ key: "s3Key", value: s3Key })); // store S3 key returned by backend
-            resolve();
-          } else {
-            dispatch(setVodUploadError("Upload failed."));
-            reject();
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            const percent = Math.round((ev.loaded / ev.total) * 100);
+            dispatch(setVodUploadProgress({ progress: percent }));
           }
         };
 
         xhr.onerror = () => {
-          dispatch(setVodUploadError("Network error during upload."));
-          reject();
+          dispatch(setVodUploadError("Upload failed"));
+          reject(new Error("Upload failed"));
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            dispatch(setVodS3Key({ s3Key: fileKey }));
+            resolve();
+          } else {
+            dispatch(setVodUploadError("Upload failed"));
+            reject(new Error("Upload failed"));
+          }
         };
 
         xhr.send(selectedFile);
       });
     } catch (err) {
-      dispatch(setVodUploadError("Failed to upload file."));
+      dispatch(setVodUploadError("Upload error"));
     }
   };
+
+  // ----------------------------------------------------------
+  // UI START
+  // ----------------------------------------------------------
 
   return (
     <div className="space-y-8">
 
-      {/* ----------------------------- */}
-      {/* Title + Type */}
-      {/* ----------------------------- */}
+      {/* ------------------------------------------------------ */}
+      {/* BASIC INFO: Title, Event Type                          */}
+      {/* ------------------------------------------------------ */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <Label>Event Title</Label>
           <Input
             value={form.title}
@@ -116,7 +132,7 @@ export default function EventDetailsTab() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           <Label>Event Type</Label>
           <Select
             value={form.eventType}
@@ -135,27 +151,27 @@ export default function EventDetailsTab() {
         </div>
       </div>
 
-      {/* ----------------------------- */}
-      {/* Description */}
-      {/* ----------------------------- */}
-      <div className="space-y-2">
+      {/* ------------------------------------------------------ */}
+      {/* DESCRIPTION                                             */}
+      {/* ------------------------------------------------------ */}
+      <div className="space-y-4 mt-4">
         <Label>Description</Label>
         <Textarea
           rows={4}
-          value={form.description}
           placeholder="Enter description"
+          value={form.description}
           onChange={(e) =>
             dispatch(updateField({ key: "description", value: e.target.value }))
           }
         />
       </div>
 
-      {/* ----------------------------- */}
-      {/* LIVE FIELDS */}
-      {/* ----------------------------- */}
+      {/* ------------------------------------------------------ */}
+      {/* LIVE EVENT FIELDS                                      */}
+      {/* ------------------------------------------------------ */}
       {form.eventType === "live" && (
         <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-4 mt-4">
             <Label>Start Time</Label>
             <Input
               type="datetime-local"
@@ -166,7 +182,7 @@ export default function EventDetailsTab() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4 mt-4">
             <Label>End Time (optional)</Label>
             <Input
               type="datetime-local"
@@ -179,26 +195,24 @@ export default function EventDetailsTab() {
         </div>
       )}
 
-      {/* ----------------------------- */}
-      {/*            VOD UPLOAD         */}
-      {/* ----------------------------- */}
+      {/* ------------------------------------------------------ */}
+      {/* VOD UPLOAD SECTION                                      */}
+      {/* ------------------------------------------------------ */}
       {form.eventType === "vod" && (
         <div className="p-6 border-2 border-dashed border-[#B89B5E]/30 rounded-lg bg-[#B89B5E]/5 space-y-4">
 
-          {/* Title Row */}
+          {/* HEADER */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#B89B5E]/20 flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#B89B5E]/20 rounded-lg flex items-center justify-center">
               <Video className="w-5 h-5 text-[#B89B5E]" />
             </div>
             <div>
               <h3 className="font-semibold">Video On Demand (VOD) Upload</h3>
-              <p className="text-xs text-gray-600">
-                Upload pre-recorded video file for playback
-              </p>
+              <p className="text-xs text-gray-600">Upload your video file for on-demand streaming.</p>
             </div>
           </div>
 
-          {/* Hidden input */}
+          {/* Hidden file input */}
           <input
             ref={fileRef}
             type="file"
@@ -207,7 +221,7 @@ export default function EventDetailsTab() {
             onChange={(e) => handleSelect(e.target.files?.[0])}
           />
 
-          {/* UI */}
+          {/* Upload Controls */}
           <div className="space-y-3">
             <Label>Video File</Label>
 
@@ -238,7 +252,7 @@ export default function EventDetailsTab() {
             </div>
 
             {/* Progress Bar */}
-            {form.vodUpload?.progress > 0 && (
+            {form.vodUpload.progress > 0 && (
               <div className="w-full bg-gray-200 h-2 rounded">
                 <div
                   className="bg-green-600 h-2 rounded"
@@ -248,7 +262,7 @@ export default function EventDetailsTab() {
             )}
 
             {/* Error */}
-            {form.vodUpload?.error && (
+            {form.vodUpload.error && (
               <p className="text-xs text-red-600">{form.vodUpload.error}</p>
             )}
 
@@ -258,9 +272,9 @@ export default function EventDetailsTab() {
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg text-xs leading-5 flex gap-2">
-            <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            VOD files are uploaded to S3 & served through CloudFront.
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex gap-2">
+            <Info className="w-4 h-4 text-blue-600" />
+            Files are uploaded to S3 and streamed via CloudFront CDN.
           </div>
         </div>
       )}

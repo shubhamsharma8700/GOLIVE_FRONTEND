@@ -1,26 +1,42 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-const savedToken = localStorage.getItem("token");
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  token: string | null;
+  isLoggedIn: boolean;
+}
+
+const savedToken = localStorage.getItem("token") || null;
+
+const initialState: AuthState = {
+  user: null,
+  token: savedToken,
+  isLoggedIn: !!savedToken,
+};
 
 const authSlice = createSlice({
   name: "auth",
-  initialState: {
-    user: null,
-    token: savedToken || null,
-    isLoggedIn: !!savedToken,
-  },
+  initialState,
 
   reducers: {
-    setCredentials: (state, action) => {
+    setCredentials: (
+      state,
+      action: PayloadAction<{ user: AuthUser; token: string }>
+    ) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isLoggedIn = true;
 
-      // persist token
       localStorage.setItem("token", action.payload.token);
     },
 
-    setProfile: (state, action) => {
+    setProfile: (state, action: PayloadAction<AuthUser>) => {
       state.user = action.payload;
       state.isLoggedIn = true;
     },

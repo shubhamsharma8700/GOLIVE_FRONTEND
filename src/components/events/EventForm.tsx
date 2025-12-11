@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
+
 import { loadEvent, resetForm } from "../../store/slices/eventSlice";
 
 import {
@@ -33,8 +34,13 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
   const [createEvent] = useCreateEventMutation();
   const [updateEvent] = useUpdateEventMutation();
 
-  const { data } = useGetEventByIdQuery(eventId ?? "", { skip: !eventId });
+  const { data } = useGetEventByIdQuery(eventId ?? "", {
+    skip: !eventId,
+  });
 
+  // --------------------------------------------------
+  // LOAD EVENT FOR EDIT MODE
+  // --------------------------------------------------
   useEffect(() => {
     if (mode === "create") {
       dispatch(resetForm());
@@ -43,40 +49,86 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
   }, [mode, data, dispatch, eventId]);
 
+  // --------------------------------------------------
+  // CLEAN PAYLOAD ACCORDING TO USER FLOW
+  // --------------------------------------------------
+  const buildPayload = (): Record<string, any> => {
+    const payload: Record<string, any> = {
+      title: form.title,
+      description: form.description,
+      eventType: form.eventType,
+      accessMode: form.accessMode,
+    };
+
+    // LIVE ONLY
+    if (form.eventType === "live") {
+      payload.startTime = form.startTime;
+      payload.endTime = form.endTime;
+
+      // video config as a JSON object (uses nested 'pixel' structure)
+      payload.videoConfig = {
+        resolution: form.videoConfig.resolution,
+        frameRate: form.videoConfig.frameRate,
+        bitrate: form.videoConfig.bitrate,
+        pixel: {
+          provider: form.videoConfig.pixel?.provider || "none",
+          id: form.videoConfig.pixel?.id || "",
+        },
+      };
+    }
+
+    // VOD ONLY
+    if (form.eventType === "vod") {
+      payload.s3Key = form.s3Key; // assigned after presigned upload
+    }
+
+    // ACCESS MODE CONDITIONAL PAYLOADS
+    if (form.accessMode === "emailAccess" || form.accessMode === "passwordAccess") {
+      // include registration fields only in these two modes
+      payload.formFields = {};
+
+      form.registrationFields.forEach((f: { id: string; label: string; type: string; required: boolean }) => {
+        payload.formFields[f.id] = {
+          label: f.label,
+          type: f.type,
+          required: f.required,
+        };
+      });
+    }
+
+    if (form.accessMode === "passwordAccess") {
+      payload.accessPasswordHash = form.accessPasswordHash;
+    }
+
+    if (form.accessMode === "paidAccess") {
+      payload.paymentAmount = form.paymentAmount;
+      payload.currency = form.currency;
+    }
+
+    return payload;
+  };
+
+  // --------------------------------------------------
+  // SUBMIT HANDLER
+  // --------------------------------------------------
   const handleSubmit = async () => {
     try {
-      const payload: any = {
-        title: form.title,
-        description: form.description,
-        accessMode: form.accessMode,
-        startTime: form.startTime,
-        endTime: form.endTime,
-        s3Key: form.s3Key,
-        formFields: form.registrationFields.reduce(
-          (acc: { [key: string]: { type: string; required: boolean } }, f) => {
-            acc[f.id] = { type: f.type, required: f.required };
-            return acc;
-          },
-          {}
-        ),
-        paymentAmount: form.paymentAmount,
-        currency: form.currency,
-      };
+      const payload = buildPayload();
 
       if (mode === "create") {
-        await createEvent({ ...payload, eventType: form.eventType }).unwrap();
-        dispatch(resetForm());
-        onBack();
+        await createEvent(payload).unwrap();
       } else if (mode === "update" && eventId) {
         await updateEvent({ eventId, data: payload }).unwrap();
-        onBack();
       }
+
+      dispatch(resetForm());
+      onBack();
     } catch (err) {
       console.error("Event Submit Error:", err);
     }
   };
 
-  // FIGMA heading
+  // UI headings based on mode
   const title =
     mode === "create"
       ? "Create New Event"
@@ -110,17 +162,12 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
         </div>
       </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* 🟦 THREE-TABS ONLY: Details | Video (Live only) | Access & Security */}
-      {/* ---------------------------------------------------------------- */}
+      {/* ------------------------------- */}
+      {/* TABS: Details | Video | Access  */}
+      {/* ------------------------------- */}
       <EventTabs>
-        {/* TAB 1: Event Details */}
         <EventDetailsTab />
-
-        {/* TAB 2: Video Config (hidden for VOD because component returns null) */}
         <VideoConfigTab />
-
-        {/* TAB 3: Access & Security (includes Registration Form inside) */}
         <AccessSecurityTab />
       </EventTabs>
 
