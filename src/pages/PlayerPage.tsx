@@ -40,10 +40,13 @@ export default function PlayerPage() {
         fluid: true,
         responsive: true,
         inactivityTimeout: 3000,
+        playbackRates: [0.5, 1, 1.5, 2],
         controlBar: {
           volumePanel: { inline: false },
           pictureInPictureToggle: true,
           remainingTimeDisplay: false,
+          playbackRateMenuButton: true,
+          fullscreenToggle: true,
         },
       });
 
