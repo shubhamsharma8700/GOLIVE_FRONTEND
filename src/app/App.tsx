@@ -22,7 +22,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/new-password" element={<NewPassword />} />
-      <Route path="/player" element={<PlayerPage />} />
+      <Route path="/player/:id" element={<PlayerPage />} />
 
 
       {/* Protected dashboard routes */}

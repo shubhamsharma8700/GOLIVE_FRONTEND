@@ -26,7 +26,7 @@ export const baseApi = createApi({
     "Users",
     "Viewers",
     "VOD",
-    "Reports",
+    "Analytics",
     "Player",
   ],
 
