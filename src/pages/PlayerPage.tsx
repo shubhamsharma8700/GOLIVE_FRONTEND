@@ -18,6 +18,7 @@ import {
   useRegisterViewerMutation,
   useVerifyPasswordMutation,
   useGetStreamQuery,
+  useValidateViewerQuery,
 } from "../store/services/player.service";
 
 // Analytics APIs
@@ -62,6 +63,19 @@ function collectDeviceInfo() {
   };
 }
 
+function getStoredViewerToken(eventId: string) {
+  if (!eventId) return null;
+  return localStorage.getItem(`viewerToken:${eventId}`);
+}
+
+function storeViewerToken(eventId: string, token: string) {
+  localStorage.setItem(`viewerToken:${eventId}`, token);
+}
+
+function clearViewerToken(eventId: string) {
+  localStorage.removeItem(`viewerToken:${eventId}`);
+}
+
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? "";
@@ -84,6 +98,50 @@ export default function PlayerPage() {
 
   const accessMode = accessConfig?.accessMode;
 
+  /* ================= RESTORE TOKEN ================= */
+
+  const storedViewerToken = useMemo(
+    () => getStoredViewerToken(eventId),
+    [eventId]
+  );
+
+  const {
+    data: validateData,
+    isSuccess: isValidateSuccess,
+    isError: isValidateError,
+  } = useValidateViewerQuery(
+    { eventId, viewerToken: storedViewerToken! },
+    { skip: !eventId || !storedViewerToken }
+  );
+
+  useEffect(() => {
+    if (!storedViewerToken) return;
+
+    if (isValidateSuccess && validateData?.success) {
+      setViewerToken(storedViewerToken);
+
+      const canAccess =
+        accessMode === "freeAccess" ||
+        accessMode === "emailAccess" ||
+        validateData.viewer.accessVerified === true;
+
+      setHasAccess(canAccess);
+    }
+
+    if (isValidateError) {
+      clearViewerToken(eventId);
+      setViewerToken(null);
+      setHasAccess(false);
+    }
+  }, [
+    storedViewerToken,
+    isValidateSuccess,
+    isValidateError,
+    validateData,
+    accessMode,
+    eventId,
+  ]);
+
   /* ================= REGISTER VIEWER ================= */
 
   const [registerViewer] = useRegisterViewerMutation();
@@ -97,6 +155,7 @@ export default function PlayerPage() {
     }).unwrap();
 
     setViewerToken(res.viewerToken);
+    storeViewerToken(eventId, res.viewerToken);
     setHasAccess(Boolean(res.accessVerified));
   };
 
@@ -126,7 +185,6 @@ export default function PlayerPage() {
       viewerToken,
     }).unwrap();
 
-    // Stripe Checkout redirect
     window.location.href = res.url;
   };
 
@@ -162,8 +220,6 @@ export default function PlayerPage() {
       aspectRatio: "16:9",
       liveui: streamData.playbackType === "live",
       playbackRates: [0.5, 1, 1.5, 2],
-      
-
       controlBar: {
         volumePanel: { inline: false },
         remainingTimeDisplay: { displayNegative: false },
@@ -171,7 +227,6 @@ export default function PlayerPage() {
         playbackRateMenuButton: true,
         pictureInPictureToggle: true,
         fullscreenToggle: true,
-        // settingsMenuButton: true,
       },
       html5: {
         vhs: {
@@ -180,19 +235,9 @@ export default function PlayerPage() {
           enableLowInitialPlaylist: true,
         },
       },
-      userActions: {
-        click: true,
-        doubleClick: true,
-        hotkeys: {
-          playPauseKey: (e: KeyboardEvent) => e.key === "k" || e.key === " ",
-          fullscreenKey: (e: KeyboardEvent) => e.key === "f",
-          muteKey: (e: KeyboardEvent) => e.key === "m",
-        },
-      },
     });
 
     playerRef.current = player;
-
 
     player.src({
       src: streamData.streamUrl,
@@ -201,18 +246,10 @@ export default function PlayerPage() {
 
     player.ready(() => {
       const anyPlayer = player as any;
-
       if (typeof anyPlayer.hlsQualitySelector === "function") {
-        anyPlayer.hlsQualitySelector({
-          displayCurrentQuality: true,
-        });
+        anyPlayer.hlsQualitySelector({ displayCurrentQuality: true });
       }
     });
-
-
-
-
-
 
     const startAnalytics = async () => {
       if (sessionIdRef.current) return;
@@ -268,11 +305,6 @@ export default function PlayerPage() {
       startHeartbeat();
     });
 
-    player.on("play", () => {
-      isPlayingRef.current = true;
-      startHeartbeat();
-    });
-
     player.on("pause", () => {
       isPlayingRef.current = false;
       stopHeartbeat();
@@ -314,47 +346,35 @@ export default function PlayerPage() {
   }
 
   if (!hasAccess && accessMode === "passwordAccess") {
-    if (!viewerToken) {
-      overlay = (
-        <EmailOverlay
-          open
-          eventId={eventId}
-          fields={accessConfig?.registrationFields || []}
-          onAccessGranted={handleRegister}
-        />
-      );
-    } else {
-      overlay = (
-        <PasswordOverlay
-          open
-          eventId={eventId}
-          onSubmit={handlePasswordVerify}
-        />
-      );
-    }
+    overlay = !viewerToken ? (
+      <EmailOverlay
+        open
+        fields={accessConfig?.registrationFields || []}
+        eventId={eventId}
+        onAccessGranted={handleRegister}
+      />
+    ) : (
+      <PasswordOverlay open eventId={eventId} onSubmit={handlePasswordVerify} />
+    );
   }
 
   if (!hasAccess && accessMode === "paidAccess") {
-    if (!viewerToken) {
-      overlay = (
-        <EmailOverlay
-          open
-          fields={accessConfig?.registrationFields || []}
-          eventId={eventId}
-          onAccessGranted={handleRegister}
-        />
-      );
-    } else {
-      overlay = (
-        <PaymentOverlay
-          open
-          eventId={eventId}
-          amount={accessConfig?.payment?.amount}
-          currency={accessConfig?.payment?.currency}
-          onPay={handlePayment}
-        />
-      );
-    }
+    overlay = !viewerToken ? (
+      <EmailOverlay
+        open
+        fields={accessConfig?.registrationFields || []}
+        eventId={eventId}
+        onAccessGranted={handleRegister}
+      />
+    ) : (
+      <PaymentOverlay
+        open
+        eventId={eventId}
+        amount={accessConfig?.payment?.amount}
+        currency={accessConfig?.payment?.currency}
+        onPay={handlePayment}
+      />
+    );
   }
 
   /* ================= RENDER ================= */

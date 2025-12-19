@@ -4,6 +4,30 @@ import { baseApi } from "./baseApi";
 export const playerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
 
+    // 0️⃣ Validate viewer token (NEW)
+    validateViewer: builder.query<
+      {
+        success: boolean;
+        viewer: {
+          eventId: string;
+          clientViewerId: string;
+          accessVerified: boolean;
+          isPaidViewer: boolean;
+        };
+      },
+      {
+        eventId: string;
+        viewerToken: string;
+      }
+    >({
+      query: ({ eventId, viewerToken }) => ({
+        url: `/playback/event/${eventId}/validate`,
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+        },
+      }),
+    }),
+
     // 1️⃣ Get event access configuration
     getAccessConfig: builder.query<
       {
@@ -12,8 +36,6 @@ export const playerApi = baseApi.injectEndpoints({
         requiresForm: boolean;
         requiresPassword: boolean;
         registrationFields: any[];
-
-        // ✅ ADD
         payment?: {
           amount: number;
           currency: string;
@@ -24,13 +46,13 @@ export const playerApi = baseApi.injectEndpoints({
       query: (eventId) => `/playback/event/${eventId}/access`,
     }),
 
-
     // 2️⃣ Register viewer (free / email / paid)
     registerViewer: builder.mutation<
       {
         success: boolean;
         viewerToken: string;
         accessVerified: boolean;
+        accessMode: string;
       },
       {
         eventId: string;
@@ -93,6 +115,7 @@ export const playerApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useValidateViewerQuery,     // ✅ NEW
   useGetAccessConfigQuery,
   useRegisterViewerMutation,
   useVerifyPasswordMutation,
