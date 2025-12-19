@@ -12,25 +12,43 @@ export interface PaymentAccessOverlayProps {
 const PaymentAccessOverlay: React.FC<PaymentAccessOverlayProps> = ({
   open,
   eventId,
-  amount = 9.99,
-  currency = "USD",
+  amount,
+  currency,
   onPay,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
+  /* ---------------------------------------------
+     Open / close animation + reset
+  --------------------------------------------- */
   useEffect(() => {
     if (open) {
+      setLoading(false);
+      setError(null);
+
       const t = setTimeout(() => setIsVisible(true), 10);
       return () => clearTimeout(t);
     }
     setIsVisible(false);
   }, [open]);
 
+  /* ---------------------------------------------
+     Handle payment
+  --------------------------------------------- */
   const handlePayment = async () => {
+    if (loading) return;
+
     try {
       setLoading(true);
-      await onPay(); // backend / gateway handled by PlayerPage
+      setError(null);
+      await onPay(); // Stripe handled in PlayerPage
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Payment failed. Please try again or use a different card."
+      );
     } finally {
       setLoading(false);
     }
@@ -144,8 +162,22 @@ const PaymentAccessOverlay: React.FC<PaymentAccessOverlayProps> = ({
             textAlign: "center",
           }}
         >
-          {currency} {amount.toFixed(2)}
+          {currency || '$'} {amount?.toFixed(2) || '0.00'}
         </div>
+
+        {/* Error */}
+        {error && (
+          <p
+            style={{
+              fontSize: "0.75rem",
+              color: "#ef4444",
+              textAlign: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
+            {error}
+          </p>
+        )}
 
         {/* Pay Button */}
         <button

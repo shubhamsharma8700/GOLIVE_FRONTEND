@@ -38,9 +38,9 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     skip: !eventId,
   });
 
-  // --------------------------------------------------
-  // LOAD EVENT FOR EDIT MODE
-  // --------------------------------------------------
+  /* ======================================================
+     LOAD EVENT
+  ====================================================== */
   useEffect(() => {
     if (mode === "create") {
       dispatch(resetForm());
@@ -49,51 +49,44 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
   }, [mode, data, dispatch, eventId]);
 
-  // --------------------------------------------------
-  // CLEAN PAYLOAD ACCORDING TO USER FLOW
-  // --------------------------------------------------
+  /* ======================================================
+     BUILD PAYLOAD (BACKEND-SAFE)
+  ====================================================== */
   const buildPayload = (): Record<string, any> => {
     const payload: Record<string, any> = {
       title: form.title,
       description: form.description,
-      eventType: form.eventType,
       accessMode: form.accessMode,
     };
 
-    // LIVE ONLY
-    if (form.eventType === "live") {
+    // CREATE ONLY
+    if (mode === "create") {
+      payload.eventType = form.eventType;
+    }
+
+    // SCHEDULED ONLY (time + video)
+    if (form.eventType === "scheduled") {
       payload.startTime = form.startTime;
       payload.endTime = form.endTime;
 
-      // video config as a JSON object (uses nested 'pixel' structure)
       payload.videoConfig = {
         resolution: form.videoConfig.resolution,
         frameRate: form.videoConfig.frameRate,
-        bitrate: form.videoConfig.bitrate,
-        pixel: {
-          provider: form.videoConfig.pixel?.provider || "none",
-          id: form.videoConfig.pixel?.id || "",
-        },
+        bitrateProfile: form.videoConfig.bitrateProfile,
       };
     }
 
     // VOD ONLY
     if (form.eventType === "vod") {
-      payload.s3Key = form.s3Key; // assigned after presigned upload
+      payload.s3Key = form.s3Key;
     }
 
-    // ACCESS MODE CONDITIONAL PAYLOADS
-    if (form.accessMode === "emailAccess" || form.accessMode === "passwordAccess") {
-      // include registration fields only in these two modes
-      payload.formFields = {};
-
-      form.registrationFields.forEach((f: { id: string; label: string; type: string; required: boolean }) => {
-        payload.formFields[f.id] = {
-          label: f.label,
-          type: f.type,
-          required: f.required,
-        };
-      });
+    // ACCESS MODES
+    if (
+      form.accessMode === "emailAccess" ||
+      form.accessMode === "passwordAccess"
+    ) {
+      payload.registrationFields = form.registrationFields;
     }
 
     if (form.accessMode === "passwordAccess") {
@@ -108,9 +101,9 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     return payload;
   };
 
-  // --------------------------------------------------
-  // SUBMIT HANDLER
-  // --------------------------------------------------
+  /* ======================================================
+     SUBMIT
+  ====================================================== */
   const handleSubmit = async () => {
     try {
       const payload = buildPayload();
@@ -118,7 +111,7 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
       if (mode === "create") {
         await createEvent(payload).unwrap();
       } else if (mode === "update" && eventId) {
-        await updateEvent({ eventId, data: payload }).unwrap();
+        await updateEvent({ eventId, body: payload }).unwrap();
       }
 
       dispatch(resetForm());
@@ -128,13 +121,8 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
   };
 
-  // UI headings based on mode
   const title =
-    mode === "create"
-      ? "Create New Event"
-      : mode === "update"
-      ? "Edit Event"
-      : "Event";
+    mode === "create" ? "Create New Event" : "Edit Event";
 
   const subtitle =
     mode === "create"
@@ -162,16 +150,14 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
         </div>
       </div>
 
-      {/* ------------------------------- */}
-      {/* TABS: Details | Video | Access  */}
-      {/* ------------------------------- */}
+      {/* Tabs */}
       <EventTabs>
         <EventDetailsTab />
         <VideoConfigTab />
         <AccessSecurityTab />
       </EventTabs>
 
-      {/* Footer Buttons */}
+      {/* Footer */}
       <div className="flex justify-end gap-3 pt-6 border-t">
         <Button
           variant="outline"

@@ -1,27 +1,28 @@
+// src/components/player/EmailOverlay.tsx
 import React, { useState, useEffect } from "react";
 import { Mail } from "lucide-react";
+
+export interface RegistrationField {
+  id: string;
+  label: string;
+  type: string;
+  required?: boolean;
+}
 
 export interface EmailOverlayProps {
   open: boolean;
   eventId: string;
-  onAccessGranted: (formData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  }) => void;
+  fields: RegistrationField[];
+  onAccessGranted: (formData: Record<string, string>) => void;
 }
 
 const EmailOverlay: React.FC<EmailOverlayProps> = ({
   open,
   eventId,
+  fields,
   onAccessGranted,
 }) => {
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-  });
-
+  const [form, setForm] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
@@ -33,25 +34,20 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
     setIsVisible(false);
   }, [open]);
 
-  const handleSubmit = () => {
-    if (!form.firstName || !form.lastName || !form.email) {
-      setError("All fields are required");
-      return;
-    }
+  const handleChange = (id: string, value: string) => {
+    setForm((prev) => ({ ...prev, [id]: value }));
+  };
 
-    if (!form.email.includes("@")) {
-      setError("Please enter a valid email");
-      return;
+  const handleSubmit = () => {
+    for (const field of fields) {
+      if (field.required && !form[field.id]) {
+        setError(`${field.label} is required`);
+        return;
+      }
     }
 
     setError("");
-
-    // ✅ Pass collected data back to PlayerPage
-    onAccessGranted({
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim().toLowerCase(),
-    });
+    onAccessGranted(form);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -77,7 +73,6 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
         transition: "opacity 300ms ease-in-out",
       }}
     >
-      {/* Backdrop */}
       <div
         style={{
           position: "absolute",
@@ -87,7 +82,6 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
         }}
       />
 
-      {/* Modal */}
       <div
         style={{
           position: "relative",
@@ -102,7 +96,6 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
           transition: "transform 300ms ease, opacity 300ms ease",
         }}
       >
-        {/* Icon */}
         <div
           style={{
             margin: "0 auto 0.75rem",
@@ -118,7 +111,6 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
           <Mail size={18} color="white" />
         </div>
 
-        {/* Title */}
         <h2
           style={{
             fontSize: "1.25rem",
@@ -131,66 +123,32 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
           Access This Video
         </h2>
 
-        {/* Event context */}
         <p
           style={{
             fontSize: "0.7rem",
             color: "#9ca3af",
             textAlign: "center",
-            marginBottom: "0.75rem",
+            marginBottom: "1rem",
           }}
         >
           Event ID: <span style={{ fontFamily: "monospace" }}>{eventId}</span>
         </p>
 
-        {/* Description */}
-        <p
-          style={{
-            fontSize: "0.8rem",
-            color: "#6b7280",
-            textAlign: "center",
-            marginBottom: "1rem",
-          }}
-        >
-          Enter your details to continue
-        </p>
-
-        {/* Form */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <input
-            placeholder="First name"
-            value={form.firstName}
-            onChange={(e) =>
-              setForm({ ...form, firstName: e.target.value })
-            }
-            onKeyDown={handleKeyPress}
-            style={inputStyle}
-          />
-
-          <input
-            placeholder="Last name"
-            value={form.lastName}
-            onChange={(e) =>
-              setForm({ ...form, lastName: e.target.value })
-            }
-            onKeyDown={handleKeyPress}
-            style={inputStyle}
-          />
-
-          <input
-            placeholder="Email address"
-            value={form.email}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
-            onKeyDown={handleKeyPress}
-            style={inputStyle}
-          />
+          {fields.map((field) => (
+            <input
+              key={field.id}
+              type={field.type || "text"}
+              placeholder={field.label}
+              value={form[field.id] || ""}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              onKeyDown={handleKeyPress}
+              style={inputStyle}
+            />
+          ))}
 
           {error && (
-            <p style={{ fontSize: "0.75rem", color: "#ef4444" }}>
-              {error}
-            </p>
+            <p style={{ fontSize: "0.75rem", color: "#ef4444" }}>{error}</p>
           )}
 
           <button
@@ -209,17 +167,6 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
             Continue to Watch
           </button>
         </div>
-
-        <p
-          style={{
-            fontSize: "0.7rem",
-            color: "#9ca3af",
-            textAlign: "center",
-            marginTop: "0.75rem",
-          }}
-        >
-          Secure • Verified • Event Access
-        </p>
       </div>
     </div>
   );

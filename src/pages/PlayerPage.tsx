@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+// src/pages/PlayerPage.tsx
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 // Video.js
@@ -19,14 +20,25 @@ import {
   useGetStreamQuery,
 } from "../store/services/player.service";
 
+// Analytics APIs
+import {
+  useStartSessionMutation,
+  useHeartbeatMutation,
+  useEndSessionMutation,
+} from "../store/services/analytics.service";
+
+// Payment API
+import { useCreatePaymentSessionMutation } from "../store/services/payments.service";
+
 // Overlays
 import EmailOverlay from "../components/player/EmailOverlay";
 import PasswordOverlay from "../components/player/PasswordAccessOverlay";
 import PaymentOverlay from "../components/player/PaymentAccessOverlay";
 
-// --------------------------------------------------
-// Stable clientViewerId (Option A)
-// --------------------------------------------------
+/* ============================================================
+   HELPERS
+============================================================ */
+
 function getClientViewerId() {
   let id = localStorage.getItem("clientViewerId");
   if (!id) {
@@ -36,62 +48,65 @@ function getClientViewerId() {
   return id;
 }
 
+function collectDeviceInfo() {
+  return {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screen: {
+      width: window.screen.width,
+      height: window.screen.height,
+      pixelRatio: window.devicePixelRatio,
+    },
+  };
+}
+
 export default function PlayerPage() {
-  // ---------------- Route Param ----------------
   const { id } = useParams<{ id: string }>();
-  const safeEventId = id ?? "";
+  const eventId = id ?? "";
 
-  // ---------------- Viewer Identity ----------------
-  const clientViewerId = useMemo(getClientViewerId, []);
-
-  // ---------------- Video.js Refs ----------------
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<Player | null>(null);
 
-  // ---------------- Auth State ----------------
+  const heartbeatTimerRef = useRef<number | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const isPlayingRef = useRef(false);
+
+  const clientViewerId = useMemo(getClientViewerId, []);
   const [viewerToken, setViewerToken] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
 
-  // =================================================
-  // ACCESS CONFIG
-  // =================================================
-  const {
-    data: accessConfig,
-    isLoading: accessLoading,
-  } = useGetAccessConfigQuery(safeEventId, {
-    skip: !safeEventId,
-  });
+  /* ================= ACCESS CONFIG ================= */
+
+  const { data: accessConfig, isLoading } =
+    useGetAccessConfigQuery(eventId, { skip: !eventId });
 
   const accessMode = accessConfig?.accessMode;
 
-  // =================================================
-  // REGISTER VIEWER
-  // =================================================
+  /* ================= REGISTER VIEWER ================= */
+
   const [registerViewer] = useRegisterViewerMutation();
 
   const handleRegister = async (formData?: any) => {
-    if (!safeEventId) return;
-
     const res = await registerViewer({
-      eventId: safeEventId,
+      eventId,
       clientViewerId,
       formData,
+      deviceInfo: collectDeviceInfo(),
     }).unwrap();
 
     setViewerToken(res.viewerToken);
-    setHasAccess(res.accessVerified);
+    setHasAccess(Boolean(res.accessVerified));
   };
 
-  // =================================================
-  // PASSWORD VERIFY
-  // =================================================
+  /* ================= PASSWORD VERIFY ================= */
+
   const [verifyPassword] = useVerifyPasswordMutation();
 
   const handlePasswordVerify = async (password: string) => {
-    if (!safeEventId) return;
-
     await verifyPassword({
-      eventId: safeEventId,
+      eventId,
       clientViewerId,
       password,
     }).unwrap();
@@ -99,37 +114,46 @@ export default function PlayerPage() {
     setHasAccess(true);
   };
 
-  // =================================================
-  // STREAM API (Protected)
-  // =================================================
-  const {
-    data: streamData,
-    isFetching: streamLoading,
-  } = useGetStreamQuery(
-    {
-      eventId: safeEventId,
-      viewerToken: viewerToken!,
-    },
-    {
-      skip: !safeEventId || !viewerToken || !hasAccess,
-    }
+  /* ================= PAYMENT ================= */
+
+  const [createPaymentSession] = useCreatePaymentSessionMutation();
+
+  const handlePayment = async () => {
+    if (!viewerToken) return;
+
+    const res = await createPaymentSession({
+      eventId,
+      viewerToken,
+    }).unwrap();
+
+    // Stripe Checkout redirect
+    window.location.href = res.url;
+  };
+
+  /* ================= STREAM ================= */
+
+  const { data: streamData, isFetching } = useGetStreamQuery(
+    { eventId, viewerToken: viewerToken! },
+    { skip: !eventId || !viewerToken || !hasAccess }
   );
 
-  // =================================================
-  // VIDEO.JS INITIALIZATION
-  // =================================================
-  useEffect(() => {
-    if (!videoRef.current) return;
-    if (!streamData?.streamUrl) return;
+  /* ================= ANALYTICS ================= */
 
-    // Dispose previous player
+  const [startSession] = useStartSessionMutation();
+  const [heartbeat] = useHeartbeatMutation();
+  const [endSession] = useEndSessionMutation();
+
+  /* ================= VIDEO + ANALYTICS ================= */
+
+  useEffect(() => {
+    if (!videoRef.current || !streamData?.streamUrl || !viewerToken) return;
+
     if (playerRef.current && !playerRef.current.isDisposed()) {
       playerRef.current.dispose();
-      playerRef.current = null;
     }
 
-    const player = videojs(videoRef.current, {
-      autoplay: "any",
+    const player = videojs(videoRef.current!, {
+      autoplay: false,
       muted: false,
       controls: true,
       preload: "auto",
@@ -137,44 +161,38 @@ export default function PlayerPage() {
       responsive: true,
       aspectRatio: "16:9",
       liveui: streamData.playbackType === "live",
+      playbackRates: [0.5, 1, 1.5, 2],
+      
 
       controlBar: {
         volumePanel: { inline: false },
-        remainingTimeDisplay: { displayNegative: true },
-        skipButtons: { forward: 10, backward: 10, },
+        remainingTimeDisplay: { displayNegative: false },
+        skipButtons: { forward: 10, backward: 10 },
         playbackRateMenuButton: true,
         pictureInPictureToggle: true,
         fullscreenToggle: true,
+        // settingsMenuButton: true,
       },
-
       html5: {
         vhs: {
           overrideNative: true,
           smoothQualityChange: true,
-          enableLowInitialPlaylist: true
+          enableLowInitialPlaylist: true,
         },
       },
-
-      // User actions (mouse, keyboard)
-  userActions: {
-    doubleClick: true, // fullscreen on double click
-    click: true,       // pause/play on click
-
-    hotkeys: {
-      // Space / K pause toggle (default)
-      playPauseKey: (e: KeyboardEvent) => e.key === "k" || e.key === " ",
-
-      // F fullscreen toggle
-      fullscreenKey: (e: KeyboardEvent) => e.key === "f",
-
-      // M mute toggle
-      muteKey: (e: KeyboardEvent) => e.key === "m",
-    },
-  },
-
+      userActions: {
+        click: true,
+        doubleClick: true,
+        hotkeys: {
+          playPauseKey: (e: KeyboardEvent) => e.key === "k" || e.key === " ",
+          fullscreenKey: (e: KeyboardEvent) => e.key === "f",
+          muteKey: (e: KeyboardEvent) => e.key === "m",
+        },
+      },
     });
 
     playerRef.current = player;
+
 
     player.src({
       src: streamData.streamUrl,
@@ -182,82 +200,167 @@ export default function PlayerPage() {
     });
 
     player.ready(() => {
-      if (typeof (player as any).hlsQualitySelector === "function") {
-        (player as any).hlsQualitySelector({
+      const anyPlayer = player as any;
+
+      if (typeof anyPlayer.hlsQualitySelector === "function") {
+        anyPlayer.hlsQualitySelector({
           displayCurrentQuality: true,
         });
       }
     });
 
-    return () => {
-      if (player && !player.isDisposed()) {
-        player.dispose();
-      }
-      playerRef.current = null;
-    };
-  }, [streamData]);
 
-  // =================================================
-  // AUTO REGISTER FOR FREE ACCESS
-  // =================================================
+
+
+
+
+    const startAnalytics = async () => {
+      if (sessionIdRef.current) return;
+
+      const res = await startSession({
+        eventId,
+        playbackType: streamData.playbackType,
+        deviceInfo: collectDeviceInfo(),
+        viewerToken,
+      }).unwrap();
+
+      sessionIdRef.current = res.sessionId;
+    };
+
+    const startHeartbeat = () => {
+      if (heartbeatTimerRef.current) return;
+
+      heartbeatTimerRef.current = window.setInterval(() => {
+        if (!sessionIdRef.current || !isPlayingRef.current) return;
+
+        heartbeat({
+          sessionId: sessionIdRef.current,
+          seconds: 10,
+          viewerToken,
+        });
+      }, 10000);
+    };
+
+    const stopHeartbeat = () => {
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+    };
+
+    const endAnalytics = async () => {
+      if (!sessionIdRef.current) return;
+
+      stopHeartbeat();
+
+      await endSession({
+        sessionId: sessionIdRef.current,
+        duration: Math.floor(player.currentTime() || 0),
+        viewerToken,
+      });
+
+      sessionIdRef.current = null;
+    };
+
+    player.one("play", async () => {
+      isPlayingRef.current = true;
+      await startAnalytics();
+      startHeartbeat();
+    });
+
+    player.on("play", () => {
+      isPlayingRef.current = true;
+      startHeartbeat();
+    });
+
+    player.on("pause", () => {
+      isPlayingRef.current = false;
+      stopHeartbeat();
+    });
+
+    player.on("ended", endAnalytics);
+    player.on("dispose", endAnalytics);
+
+    window.addEventListener("beforeunload", endAnalytics);
+
+    return () => {
+      window.removeEventListener("beforeunload", endAnalytics);
+      endAnalytics();
+      player.dispose();
+    };
+  }, [streamData, viewerToken]);
+
+  /* ================= AUTO REGISTER ================= */
+
   useEffect(() => {
     if (accessMode === "freeAccess" && !viewerToken) {
       handleRegister();
     }
-  }, [accessMode, viewerToken]);
+  }, [accessMode]);
 
-  // =================================================
-  // ACCESS OVERLAYS
-  // =================================================
-  let overlay: JSX.Element | null = null;
+  /* ================= OVERLAYS ================= */
+
+  let overlay: React.ReactNode = null;
 
   if (!hasAccess && accessMode === "emailAccess") {
     overlay = (
       <EmailOverlay
         open
-        eventId={safeEventId}
-        onAccessGranted={(formData) => handleRegister(formData)}
+        fields={accessConfig?.registrationFields || []}
+        eventId={eventId}
+        onAccessGranted={handleRegister}
       />
     );
   }
 
   if (!hasAccess && accessMode === "passwordAccess") {
-    overlay = (
-      <PasswordOverlay
-        open
-        eventId={safeEventId}
-        onSubmit={(password) => handlePasswordVerify(password)}
-      />
-
-    );
+    if (!viewerToken) {
+      overlay = (
+        <EmailOverlay
+          open
+          eventId={eventId}
+          fields={accessConfig?.registrationFields || []}
+          onAccessGranted={handleRegister}
+        />
+      );
+    } else {
+      overlay = (
+        <PasswordOverlay
+          open
+          eventId={eventId}
+          onSubmit={handlePasswordVerify}
+        />
+      );
+    }
   }
 
   if (!hasAccess && accessMode === "paidAccess") {
-    overlay = (
-      <PaymentOverlay
-        open
-        eventId={safeEventId}
-        amount={event?.paymentAmount}
-        currency={event?.currency}
-        onPay={async () => {
-          await handleRegister(); // or payment + register flow
-          setHasAccess(true);
-        }}
-      />
-
-    );
+    if (!viewerToken) {
+      overlay = (
+        <EmailOverlay
+          open
+          fields={accessConfig?.registrationFields || []}
+          eventId={eventId}
+          onAccessGranted={handleRegister}
+        />
+      );
+    } else {
+      overlay = (
+        <PaymentOverlay
+          open
+          eventId={eventId}
+          amount={accessConfig?.payment?.amount}
+          currency={accessConfig?.payment?.currency}
+          onPay={handlePayment}
+        />
+      );
+    }
   }
 
-  // =================================================
-  // RENDER
-  // =================================================
-  if (accessLoading) {
-    return <div className="p-6 text-white">Loading event…</div>;
-  }
+  /* ================= RENDER ================= */
 
-  if (!safeEventId) {
-    return <div className="p-6 text-white">Invalid event</div>;
-  }
+  if (isLoading) return <div className="p-6 text-white">Loading…</div>;
+  if (!eventId) return <div className="p-6 text-white">Invalid event</div>;
 
   return (
     <div className="h-screen w-full bg-gray-950 flex items-center justify-center p-4">
@@ -269,12 +372,10 @@ export default function PlayerPage() {
           ref={videoRef}
           className="video-js vjs-default-skin vjs-big-play-centered w-full h-full"
         />
-
         {overlay}
-
-        {streamLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-            <span className="text-white">Loading stream…</span>
+        {isFetching && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-white">
+            Loading stream…
           </div>
         )}
       </div>

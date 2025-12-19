@@ -73,10 +73,10 @@ export const eventsApi = baseApi.injectEndpoints({
     // UPDATE EVENT
     // ------------------------------------------------------
     updateEvent: builder.mutation({
-      query: ({ eventId, ...body }: { eventId: string;[key: string]: any }) => ({
+      query: ({ eventId, body }: { eventId: string;[key: string]: any }) => ({
         url: `/events/${eventId}`,
         method: "PUT",
-        body,
+        body: body.data ?? body,
       }),
       invalidatesTags: ["Events"],
     }),

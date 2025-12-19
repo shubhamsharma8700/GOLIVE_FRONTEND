@@ -12,12 +12,18 @@ export const playerApi = baseApi.injectEndpoints({
         requiresForm: boolean;
         requiresPassword: boolean;
         registrationFields: any[];
+
+        // ✅ ADD
+        payment?: {
+          amount: number;
+          currency: string;
+        } | null;
       },
       string
     >({
       query: (eventId) => `/playback/event/${eventId}/access`,
-      providesTags: ["Player"],
     }),
+
 
     // 2️⃣ Register viewer (free / email / paid)
     registerViewer: builder.mutation<

@@ -1,65 +1,78 @@
+// src/store/services/analytics.service.ts
 import { baseApi } from "./baseApi";
 
 /**
  * Analytics API
- * Handles viewer session lifecycle + admin analytics
+ * Viewer session lifecycle + admin analytics
  */
 export const analyticsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     /* ============================================================
        VIEWER — START SESSION
-       POST /api/analytics/:eventId/start
+       POST /api/analytics/:eventId/session/start
        ============================================================ */
     startSession: builder.mutation<
       { success: boolean; sessionId: string },
       {
         eventId: string;
+        viewerToken: string;
         playbackType?: "live" | "vod";
         deviceInfo?: Record<string, any>;
         location?: Record<string, any>;
       }
     >({
-      query: ({ eventId, ...body }) => ({
-        url: `/analytics/${eventId}/start`,
+      query: ({ eventId, viewerToken, ...body }) => ({
+        url: `/analytics/${eventId}/session/start`,
         method: "POST",
         body,
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+        },
       }),
     }),
 
     /* ============================================================
        VIEWER — HEARTBEAT
-       POST /api/analytics/heartbeat
+       POST /api/analytics/session/heartbeat
        ============================================================ */
     heartbeat: builder.mutation<
       { success: boolean },
       {
         sessionId: string;
         seconds: number;
+        viewerToken: string;
       }
     >({
-      query: (body) => ({
-        url: `/analytics/heartbeat`,
+      query: ({ viewerToken, ...body }) => ({
+        url: `/analytics/session/heartbeat`,
         method: "POST",
         body,
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+        },
       }),
     }),
 
     /* ============================================================
        VIEWER — END SESSION
-       POST /api/analytics/end
+       POST /api/analytics/session/end
        ============================================================ */
     endSession: builder.mutation<
       { success: boolean },
       {
         sessionId: string;
         duration: number;
+        viewerToken: string;
       }
     >({
-      query: (body) => ({
-        url: `/analytics/end`,
+      query: ({ viewerToken, ...body }) => ({
+        url: `/analytics/session/end`,
         method: "POST",
         body,
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+        },
       }),
     }),
 
@@ -102,6 +115,7 @@ export const analyticsApi = baseApi.injectEndpoints({
         { type: "Analytics", id: eventId },
       ],
     }),
+
   }),
   overrideExisting: false,
 });

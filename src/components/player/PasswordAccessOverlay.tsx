@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 export interface PasswordAccessOverlayProps {
   open: boolean;
   eventId: string;
-  onSubmit: (password: string) => void;
+  onSubmit: (password: string) => Promise<void> | void;
 }
 
 const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
@@ -14,17 +14,30 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
 }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
+  /* ---------------------------------------------
+     Handle open / close animation + reset
+  --------------------------------------------- */
   useEffect(() => {
     if (open) {
+      setPassword("");
+      setError("");
+      setLoading(false);
+
       const t = setTimeout(() => setIsVisible(true), 10);
       return () => clearTimeout(t);
     }
     setIsVisible(false);
   }, [open]);
 
-  const handleSubmit = () => {
+  /* ---------------------------------------------
+     Submit password
+  --------------------------------------------- */
+  const handleSubmit = async () => {
+    if (loading) return;
+
     if (!password) {
       setError("Password is required");
       return;
@@ -35,10 +48,23 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
       return;
     }
 
-    setError("");
-    onSubmit(password);
+    try {
+      setLoading(true);
+      setError("");
+      await onSubmit(password);
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Invalid or expired password. Please check your email."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ---------------------------------------------
+     Enter key handling
+  --------------------------------------------- */
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -149,6 +175,7 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={handleKeyPress}
+            disabled={loading}
             style={inputStyle}
           />
 
@@ -161,9 +188,14 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            style={buttonStyle}
+            disabled={loading}
+            style={{
+              ...buttonStyle,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
           >
-            Unlock & Watch
+            {loading ? "Verifying…" : "Unlock & Watch"}
           </button>
         </div>
 
@@ -201,7 +233,6 @@ const buttonStyle: React.CSSProperties = {
   padding: "0.75rem",
   borderRadius: "0.5rem",
   border: "none",
-  cursor: "pointer",
 };
 
 export default PasswordAccessOverlay;

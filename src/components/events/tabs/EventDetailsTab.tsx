@@ -8,7 +8,6 @@ import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   updateField,
-  setVodUploadFile,
   setVodUploadProgress,
   setVodUploadError,
   setVodS3Key,
@@ -22,8 +21,9 @@ import {
   SelectItem,
 } from "../../ui/select";
 
-import { Video, Upload, Info } from "lucide-react";
-import { useRef, useState } from "react";
+import { Video, Upload, Info, Loader2 } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { DateTime } from "luxon";
 import { useGetPresignedVodUrlMutation } from "../../../store/services/events.service";
 
 export default function EventDetailsTab() {
@@ -32,50 +32,58 @@ export default function EventDetailsTab() {
 
   const [getPresign] = useGetPresignedVodUrlMutation();
   const fileRef = useRef<HTMLInputElement | null>(null);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const isUploading = form.vodUpload.uploading;
+
   // ----------------------------------------------------------
-  // HANDLE FILE SELECT
+  // AUTO-SET START TIME (CREATE + SCHEDULED ONLY)
+  // ----------------------------------------------------------
+  useEffect(() => {
+    if (
+      form.mode === "create" &&
+      form.eventType === "scheduled" &&
+      !form.startTime
+    ) {
+      dispatch(
+        updateField({
+          key: "startTime",
+          value: DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"),
+        })
+      );
+    }
+  }, [form.mode, form.eventType]);
+
+  // ----------------------------------------------------------
+  // HANDLE FILE SELECT (NO LOADING HERE)
   // ----------------------------------------------------------
   const handleSelect = (file?: File | null) => {
     if (!file) return;
 
     setSelectedFile(file);
-
-    dispatch(
-      setVodUploadFile({
-        fileName: file.name,
-      })
-    );
-
-    // Show file name immediately (actual S3 key will update after upload)
     dispatch(updateField({ key: "s3Key", value: file.name }));
   };
 
   // ----------------------------------------------------------
-  // HANDLE UPLOAD USING PRESIGNED URL
+  // HANDLE UPLOAD (PRESIGN + UPLOAD)
   // ----------------------------------------------------------
   const handleUpload = async () => {
-    if (!selectedFile) {
+    if (!selectedFile || isUploading) {
       dispatch(setVodUploadError("No file selected"));
       return;
     }
 
-    try {
-      dispatch(setVodUploadError(null));
-      dispatch(setVodUploadProgress({ progress: 0, uploading: true }));
+    dispatch(setVodUploadError(null));
+    dispatch(setVodUploadProgress({ progress: 0, uploading: true }));
 
-      // 1. Get presigned URL
+    try {
       const presign = await getPresign({
         filename: selectedFile.name,
         contentType: selectedFile.type,
       }).unwrap();
 
-      const uploadUrl = presign.uploadUrl;
-      const fileKey = presign.fileKey;
+      const { uploadUrl, fileKey } = presign;
 
-      // 2. Upload using XHR (allows progress tracking)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", uploadUrl, true);
@@ -90,7 +98,8 @@ export default function EventDetailsTab() {
 
         xhr.onerror = () => {
           dispatch(setVodUploadError("Upload failed"));
-          reject(new Error("Upload failed"));
+          dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
+          reject();
         };
 
         xhr.onload = () => {
@@ -99,27 +108,26 @@ export default function EventDetailsTab() {
             resolve();
           } else {
             dispatch(setVodUploadError("Upload failed"));
-            reject(new Error("Upload failed"));
+            dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
+            reject();
           }
         };
 
         xhr.send(selectedFile);
       });
-    } catch (err) {
+    } catch {
       dispatch(setVodUploadError("Upload error"));
+      dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
     }
   };
 
   // ----------------------------------------------------------
-  // UI START
+  // UI (UNCHANGED)
   // ----------------------------------------------------------
 
   return (
     <div className="space-y-8">
-
-      {/* ------------------------------------------------------ */}
-      {/* BASIC INFO: Title, Event Type                          */}
-      {/* ------------------------------------------------------ */}
+      {/* BASIC INFO */}
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-4">
           <Label>Event Title</Label>
@@ -145,15 +153,14 @@ export default function EventDetailsTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="live">Live</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="vod">VOD</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* ------------------------------------------------------ */}
-      {/* DESCRIPTION                                             */}
-      {/* ------------------------------------------------------ */}
+      {/* DESCRIPTION */}
       <div className="space-y-4 mt-4">
         <Label>Description</Label>
         <Textarea
@@ -166,18 +173,19 @@ export default function EventDetailsTab() {
         />
       </div>
 
-      {/* ------------------------------------------------------ */}
-      {/* LIVE EVENT FIELDS                                      */}
-      {/* ------------------------------------------------------ */}
-      {form.eventType === "live" && (
+      {/* SCHEDULED TIME */}
+      {form.eventType === "scheduled" && (
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4 mt-4">
             <Label>Start Time</Label>
             <Input
               type="datetime-local"
               value={form.startTime ?? ""}
+              min={DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm")}
               onChange={(e) =>
-                dispatch(updateField({ key: "startTime", value: e.target.value }))
+                dispatch(
+                  updateField({ key: "startTime", value: e.target.value })
+                )
               }
             />
           </div>
@@ -187,32 +195,32 @@ export default function EventDetailsTab() {
             <Input
               type="datetime-local"
               value={form.endTime ?? ""}
+              min={form.startTime ?? undefined}
               onChange={(e) =>
-                dispatch(updateField({ key: "endTime", value: e.target.value }))
+                dispatch(
+                  updateField({ key: "endTime", value: e.target.value })
+                )
               }
             />
           </div>
         </div>
       )}
 
-      {/* ------------------------------------------------------ */}
-      {/* VOD UPLOAD SECTION                                      */}
-      {/* ------------------------------------------------------ */}
+      {/* VOD UPLOAD (UI UNCHANGED) */}
       {form.eventType === "vod" && (
-        <div className="p-6 border-2 border-dashed border-[#B89B5E]/30 rounded-lg bg-[#B89B5E]/5 space-y-4">
-
-          {/* HEADER */}
+        <div className="p-6 border-2 border-dashed border-[#B89B5E]/30 rounded-lg bg-[#B89B5E]/5 space-y-4 mt-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#B89B5E]/20 rounded-lg flex items-center justify-center">
               <Video className="w-5 h-5 text-[#B89B5E]" />
             </div>
             <div>
               <h3 className="font-semibold">Video On Demand (VOD) Upload</h3>
-              <p className="text-xs text-gray-600">Upload your video file for on-demand streaming.</p>
+              <p className="text-xs text-gray-600">
+                Upload your video file for on-demand streaming.
+              </p>
             </div>
           </div>
 
-          {/* Hidden file input */}
           <input
             ref={fileRef}
             type="file"
@@ -221,7 +229,6 @@ export default function EventDetailsTab() {
             onChange={(e) => handleSelect(e.target.files?.[0])}
           />
 
-          {/* Upload Controls */}
           <div className="space-y-3">
             <Label>Video File</Label>
 
@@ -235,8 +242,9 @@ export default function EventDetailsTab() {
 
               <button
                 type="button"
+                disabled={isUploading}
                 onClick={() => fileRef.current?.click()}
-                className="px-4 py-2 bg-[#B89B5E] text-white rounded-md hover:bg-[#A28452] flex items-center gap-2"
+                className="px-4 py-2 bg-[#B89B5E] text-white rounded-md hover:bg-[#A28452] flex items-center gap-2 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" />
                 Select
@@ -244,15 +252,22 @@ export default function EventDetailsTab() {
 
               <button
                 type="button"
+                disabled={isUploading}
                 onClick={handleUpload}
-                className="px-4 py-2 border rounded-md bg-[#B89B5E]/10 text-[#B89B5E] hover:bg-[#B89B5E]/20"
+                className="px-4 py-2 border rounded-md bg-[#B89B5E]/10 text-[#B89B5E] hover:bg-[#B89B5E]/20 disabled:opacity-50 flex items-center gap-2"
               >
-                Upload
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload"
+                )}
               </button>
             </div>
 
-            {/* Progress Bar */}
-            {form.vodUpload.progress > 0 && (
+            {isUploading && (
               <div className="w-full bg-gray-200 h-2 rounded">
                 <div
                   className="bg-green-600 h-2 rounded"
@@ -261,7 +276,6 @@ export default function EventDetailsTab() {
               </div>
             )}
 
-            {/* Error */}
             {form.vodUpload.error && (
               <p className="text-xs text-red-600">{form.vodUpload.error}</p>
             )}
@@ -271,7 +285,6 @@ export default function EventDetailsTab() {
             </p>
           </div>
 
-          {/* Info Box */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex gap-2">
             <Info className="w-4 h-4 text-blue-600" />
             Files are uploaded to S3 and streamed via CloudFront CDN.

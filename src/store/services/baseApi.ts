@@ -6,7 +6,7 @@ export const baseApi = createApi({
 
   baseQuery: fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_API_URL}`, 
-    credentials: "include", // important if backend sets cookies
+    // credentials: "include", // important if backend sets cookies
 
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
@@ -28,6 +28,7 @@ export const baseApi = createApi({
     "VOD",
     "Analytics",
     "Player",
+    "Payments",
   ],
 
   endpoints: () => ({}),
