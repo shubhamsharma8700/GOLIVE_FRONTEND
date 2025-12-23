@@ -7,7 +7,7 @@ import EventManagement from "../pages/EventManagement";
 // import CreateEvent from "../pages/CreateEvent";
 import {UserManagement} from "../pages/UserManagement";
 import {ViewersManagement} from "../pages/ViewersManagement";
-import {ReportsAnalytics} from "../pages/ReportsAnalytics";
+// import {ReportsAnalytics} from "../pages/ReportsAnalytics";
 import PlayerPage from "../pages/PlayerPage";
 import ProtectedRoute from "../routes/ProtectedRoute";
 import NewPassword from "../pages/NewPassword";
@@ -36,7 +36,7 @@ export default function App() {
         <Route path="events" element={<EventManagement />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="viewers" element={<ViewersManagement />} />
-        <Route path="reports" element={<ReportsAnalytics />} />
+        {/* <Route path="reports" element={<ReportsAnalytics />} /> */}
       </Route>
 
       {/* fallback */}

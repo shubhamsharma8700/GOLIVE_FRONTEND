@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { MapPin, Monitor } from "lucide-react";
-import { Viewer } from "../pages/ViewersManagement";
+import type { Viewer } from "../pages/ViewersManagement";
 
 interface Props {
   open: boolean;
@@ -59,7 +59,7 @@ export function ViewerDetailsModal({
               )}`}
             >
               <span className="text-white">
-                {getInitials(viewer.name)}
+                {getInitials(viewer.name ?? "Anonymous User")}
               </span>
             </div>
 
@@ -117,7 +117,7 @@ export function ViewerDetailsModal({
               <p className="text-sm text-gray-600 mb-1">
                 Last Active
               </p>
-              <p className="text-lg">{viewer.lastActive}</p>
+              <p className="text-lg">{viewer.lastActiveAt}</p>
             </div>
           </div>
 
