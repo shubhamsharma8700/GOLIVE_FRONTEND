@@ -1,17 +1,12 @@
 // src/features/events/tabs/EventDetailsTab.tsx
 
+import { useRef, useState } from "react";
+import { DateTime } from "luxon";
+import { Video, Upload, Info, Loader2 } from "lucide-react";
+
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-
-import {
-  updateField,
-  setVodUploadProgress,
-  setVodUploadError,
-  setVodS3Key,
-} from "../../../store/slices/eventSlice";
 
 import {
   Select,
@@ -21,9 +16,16 @@ import {
   SelectItem,
 } from "../../ui/select";
 
-import { Video, Upload, Info, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
-import { DateTime } from "luxon";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+
+import {
+  updateField,
+  setVodUploadProgress,
+  setVodUploadError,
+  setVodS3Key,
+} from "../../../store/slices/eventFormSlice";
+
 import { useGetPresignedVodUrlMutation } from "../../../store/services/events.service";
 
 export default function EventDetailsTab() {
@@ -35,21 +37,22 @@ export default function EventDetailsTab() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const isUploading = form.vodUpload.uploading;
+  const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
 
- 
-  // ----------------------------------------------------------
-  // HANDLE FILE SELECT (NO LOADING HERE)
-  // ----------------------------------------------------------
+  /* ======================================================
+     FILE SELECT
+  ====================================================== */
+
   const handleSelect = (file?: File | null) => {
     if (!file) return;
-
     setSelectedFile(file);
     dispatch(updateField({ key: "s3Key", value: file.name }));
   };
 
-  // ----------------------------------------------------------
-  // HANDLE UPLOAD (PRESIGN + UPLOAD)
-  // ----------------------------------------------------------
+  /* ======================================================
+     FILE UPLOAD
+  ====================================================== */
+
   const handleUpload = async () => {
     if (!selectedFile || isUploading) {
       dispatch(setVodUploadError("No file selected"));
@@ -91,7 +94,6 @@ export default function EventDetailsTab() {
             resolve();
           } else {
             dispatch(setVodUploadError("Upload failed"));
-            dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
             reject();
           }
         };
@@ -104,9 +106,9 @@ export default function EventDetailsTab() {
     }
   };
 
-  // ----------------------------------------------------------
-  // UI (UNCHANGED)
-  // ----------------------------------------------------------
+  /* ======================================================
+     UI
+  ====================================================== */
 
   return (
     <div className="space-y-8">
@@ -144,11 +146,10 @@ export default function EventDetailsTab() {
       </div>
 
       {/* DESCRIPTION */}
-      <div className="space-y-4 mt-4">
+      <div className="space-y-4">
         <Label>Description</Label>
         <Textarea
           rows={4}
-          placeholder="Enter description"
           value={form.description}
           onChange={(e) =>
             dispatch(updateField({ key: "description", value: e.target.value }))
@@ -156,70 +157,64 @@ export default function EventDetailsTab() {
         />
       </div>
 
-      {/* LIVE TIME (READ ONLY) */}
-      {/* LIVE TIME */}
-{form.eventType === "live" && (
-  <div className="grid grid-cols-2 gap-6">
-    <div className="space-y-4 mt-4">
-      <Label>Live Start Time (Auto)</Label>
-      <Input
-        type="datetime-local"
-        value={form.startTime ?? ""}
-        readOnly
-        disabled
-        className="bg-gray-100 cursor-not-allowed"
-      />
-    </div>
-
-    <div className="space-y-4 mt-4">
-      <Label>End Time (Optional)</Label>
-      <Input
-        type="datetime-local"
-        value={form.endTime ?? ""}
-        min={form.startTime ?? undefined}
-        onChange={(e) =>
-          dispatch(updateField({ key: "endTime", value: e.target.value }))
-        }
-      />
-    </div>
-  </div>
-)}
-
-
-      {/* SCHEDULED TIME */}
-      {form.eventType === "scheduled" && (
+      {/* LIVE */}
+      {form.eventType === "live" && (
         <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4 mt-4">
-            <Label>Start Time</Label>
+          <div className="space-y-4">
+            <Label>Live Start Time (Local)</Label>
             <Input
               type="datetime-local"
-              value={form.startTime ?? ""}
-              min={DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm")}
-              onChange={(e) =>
-                dispatch(
-                  updateField({ key: "startTime", value: e.target.value })
-                )
-              }
+              value={form.startTime ?? nowLocal}
+              readOnly
+              disabled
+              className="bg-gray-100"
             />
           </div>
 
-          <div className="space-y-4 mt-4">
-            <Label>End Time (optional)</Label>
+          <div className="space-y-4">
+            <Label>End Time (Optional)</Label>
             <Input
               type="datetime-local"
               value={form.endTime ?? ""}
               min={form.startTime ?? undefined}
               onChange={(e) =>
-                dispatch(
-                  updateField({ key: "endTime", value: e.target.value })
-                )
+                dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
             />
           </div>
         </div>
       )}
 
-      {/* VOD UPLOAD (UI UNCHANGED) */}
+      {/* SCHEDULED */}
+      {form.eventType === "scheduled" && (
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <Label>Start Time (Local)</Label>
+            <Input
+              type="datetime-local"
+              value={form.startTime ?? ""}
+              min={nowLocal}
+              onChange={(e) =>
+                dispatch(updateField({ key: "startTime", value: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="space-y-4">
+            <Label>End Time (Optional)</Label>
+            <Input
+              type="datetime-local"
+              value={form.endTime ?? ""}
+              min={form.startTime ?? undefined}
+              onChange={(e) =>
+                dispatch(updateField({ key: "endTime", value: e.target.value }))
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      {/* VOD UPLOAD (unchanged UI) */}
       {form.eventType === "vod" && (
         <div className="p-6 border-2 border-dashed border-[#B89B5E]/30 rounded-lg bg-[#B89B5E]/5 space-y-4 mt-4">
           <div className="flex items-center gap-3">
@@ -302,7 +297,7 @@ export default function EventDetailsTab() {
             <Info className="w-4 h-4 text-blue-600" />
             Files are uploaded to S3 and streamed via CloudFront CDN.
           </div>
-        </div>
+       </div>
       )}
     </div>
   );

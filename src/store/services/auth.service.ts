@@ -2,7 +2,6 @@ import { adminBaseApi } from "./adminBaseApi";
 
 export const authApi = adminBaseApi.injectEndpoints({
   endpoints: (builder) => ({
-
     // REGISTER ADMIN
     registerAdmin: builder.mutation({
       query: (data) => ({
@@ -46,7 +45,7 @@ export const authApi = adminBaseApi.injectEndpoints({
       providesTags: ["Admin"],
     }),
 
-    // Logout admin
+    // LOGOUT
     logout: builder.mutation({
       query: () => ({
         url: "/admin/logout",
@@ -54,7 +53,6 @@ export const authApi = adminBaseApi.injectEndpoints({
       }),
       invalidatesTags: ["Admin"],
     }),
-
   }),
 });
 

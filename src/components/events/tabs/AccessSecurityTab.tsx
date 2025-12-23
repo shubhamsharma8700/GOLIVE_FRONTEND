@@ -22,7 +22,7 @@ import {
   addRegistrationField,
   updateRegistrationField,
   removeRegistrationField,
-} from "../../../store/slices/eventSlice";
+} from "../../../store/slices/eventFormSlice";
 
 import { Plus, Trash2, Info } from "lucide-react";
 
@@ -31,22 +31,21 @@ export default function AccessSecurityTab() {
   const form = useAppSelector((s) => s.eventForm);
   const fields = form.registrationFields;
 
-  // --------------------------------------------------------------
-  // 1. Convert UI value -> backend accessMode
-  // --------------------------------------------------------------
+  /* ======================================================
+     ACCESS MODE MAPPING (UI <-> BACKEND)
+  ====================================================== */
+
   const setAccessMode = (value: string) => {
-    const map: any = {
+    const map: Record<string, typeof form.accessMode> = {
       open: "freeAccess",
       email: "emailAccess",
       password: "passwordAccess",
       payment: "paidAccess",
     };
+
     dispatch(updateField({ key: "accessMode", value: map[value] }));
   };
 
-  // --------------------------------------------------------------
-  // 2. Convert backend -> UI value
-  // --------------------------------------------------------------
   const uiMode =
     form.accessMode === "emailAccess"
       ? "email"
@@ -56,10 +55,11 @@ export default function AccessSecurityTab() {
       ? "payment"
       : "open";
 
-  // --------------------------------------------------------------
-  // Add new registration field
-  // --------------------------------------------------------------
-  const addField = () => {
+  /* ======================================================
+     REGISTRATION FIELD HELPERS
+  ====================================================== */
+
+  const handleAddField = () => {
     dispatch(
       addRegistrationField({
         id: Date.now().toString(),
@@ -70,12 +70,15 @@ export default function AccessSecurityTab() {
     );
   };
 
+  /* ======================================================
+     UI
+  ====================================================== */
+
   return (
     <div className="space-y-10">
-
-      {/* ------------------------------------------------------- */}
-      {/*  ACCESS TYPE DROPDOWN (Figma style)                     */}
-      {/* ------------------------------------------------------- */}
+      {/* -------------------------------------------------- */}
+      {/* ACCESS TYPE                                       */}
+      {/* -------------------------------------------------- */}
       <div className="space-y-2">
         <Label className="font-medium">Access Type</Label>
 
@@ -92,24 +95,28 @@ export default function AccessSecurityTab() {
           </SelectContent>
         </Select>
 
-        {/* UI Subdescription */}
-        <p className="text-xs text-[#6B6B6B] pt-1 mb-4">
-          {uiMode === "open" && "Anyone can access this event without restrictions."}
-          {uiMode === "email" && "Users must provide email before entering the event."}
-          {uiMode === "password" && "Users must enter the password you set below."}
-          {uiMode === "payment" && "Users must complete payment before accessing."}
+        <p className="text-xs text-[#6B6B6B] pt-1">
+          {uiMode === "open" &&
+            "Anyone can access this event without restrictions."}
+          {uiMode === "email" &&
+            "Users must provide email before entering the event."}
+          {uiMode === "password" &&
+            "Users must enter the password you set below."}
+          {uiMode === "payment" &&
+            "Users must complete payment before accessing the event."}
         </p>
       </div>
 
-      {/* ------------------------------------------------------- */}
-      {/*  PASSWORD MODE                                          */}
-      {/* ------------------------------------------------------- */}
+      {/* -------------------------------------------------- */}
+      {/* PASSWORD MODE                                     */}
+      {/* -------------------------------------------------- */}
       {uiMode === "password" && (
         <div className="space-y-2">
           <Label>Password</Label>
           <Input
             type="password"
             placeholder="Enter event password"
+            value={form.accessPasswordHash ?? ""}
             onChange={(e) =>
               dispatch(
                 updateField({
@@ -122,14 +129,18 @@ export default function AccessSecurityTab() {
         </div>
       )}
 
-      {/* ------------------------------------------------------- */}
-      {/*  PAYMENT MODE                                            */}
-      {/* ------------------------------------------------------- */}
+      {/* -------------------------------------------------- */}
+      {/* PAYMENT MODE                                      */}
+      {/* -------------------------------------------------- */}
       {uiMode === "payment" && (
         <div className="p-5 border rounded-lg bg-[#B89B5E]/5 space-y-4">
           <div className="flex items-center gap-2">
-            <Badge className="bg-[#B89B5E] text-white">Payment Enabled</Badge>
-            <span className="text-sm text-[#6B6B6B]">Configure payment settings</span>
+            <Badge className="bg-[#B89B5E] text-white">
+              Payment Enabled
+            </Badge>
+            <span className="text-sm text-[#6B6B6B]">
+              Configure payment settings
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -138,6 +149,7 @@ export default function AccessSecurityTab() {
               <Input
                 type="number"
                 placeholder="99.00"
+                value={form.paymentAmount ?? ""}
                 onChange={(e) =>
                   dispatch(
                     updateField({
@@ -153,8 +165,14 @@ export default function AccessSecurityTab() {
               <Label>Currency</Label>
               <Input
                 placeholder="USD"
+                value={form.currency ?? ""}
                 onChange={(e) =>
-                  dispatch(updateField({ key: "currency", value: e.target.value }))
+                  dispatch(
+                    updateField({
+                      key: "currency",
+                      value: e.target.value,
+                    })
+                  )
                 }
               />
             </div>
@@ -162,18 +180,15 @@ export default function AccessSecurityTab() {
         </div>
       )}
 
-      {/* ------------------------------------------------------- */}
-      {/* REGISTRATION FIELDS – Only shown for EMAIL & PASSWORD   */}
-      {/* ------------------------------------------------------- */}
+      {/* -------------------------------------------------- */}
+      {/* REGISTRATION FIELDS                               */}
+      {/* -------------------------------------------------- */}
       {(uiMode === "email" || uiMode === "password") && (
         <div className="space-y-6 pt-6">
-
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium flex items-center gap-2">
-                Registration Fields
-              </h3>
+              <h3 className="font-medium">Registration Fields</h3>
               <p className="text-xs text-[#6B6B6B]">
                 Customize the data you want to collect before access.
               </p>
@@ -181,7 +196,7 @@ export default function AccessSecurityTab() {
 
             <Button
               variant="outline"
-              onClick={addField}
+              onClick={handleAddField}
               className="border-[#B89B5E] text-[#B89B5E] flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -189,7 +204,7 @@ export default function AccessSecurityTab() {
             </Button>
           </div>
 
-          {/* Info Box */}
+          {/* Info */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs flex gap-2">
             <Info className="w-4 h-4 text-blue-600" />
             <span className="text-blue-800">
@@ -197,7 +212,7 @@ export default function AccessSecurityTab() {
             </span>
           </div>
 
-          {/* Field List */}
+          {/* Fields */}
           <div className="space-y-4">
             {fields.map((field) => (
               <div
@@ -205,7 +220,6 @@ export default function AccessSecurityTab() {
                 className="p-4 bg-gray-50 border rounded-lg space-y-4"
               >
                 <div className="grid grid-cols-3 gap-4">
-                  {/* Label */}
                   <div className="space-y-1">
                     <Label>Label</Label>
                     <Input
@@ -221,7 +235,6 @@ export default function AccessSecurityTab() {
                     />
                   </div>
 
-                  {/* Type */}
                   <div className="space-y-1">
                     <Label>Type</Label>
                     <Input
@@ -238,7 +251,6 @@ export default function AccessSecurityTab() {
                     />
                   </div>
 
-                  {/* Required */}
                   <div className="space-y-1">
                     <Label>Required</Label>
                     <div className="flex items-center h-10">
@@ -260,10 +272,11 @@ export default function AccessSecurityTab() {
                   </div>
                 </div>
 
-                {/* Remove Field Button */}
                 <div className="flex justify-end">
                   <button
-                    onClick={() => dispatch(removeRegistrationField(field.id))}
+                    onClick={() =>
+                      dispatch(removeRegistrationField(field.id))
+                    }
                     className="flex items-center gap-2 text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded-md text-sm"
                   >
                     <Trash2 className="w-4 h-4" />

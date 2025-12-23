@@ -1,18 +1,21 @@
 // src/store/index.ts
 import { configureStore } from "@reduxjs/toolkit";
 
+// Redux slices
 import authReducer from "./slices/authSlice";
-import eventReducer from "./slices/eventSlice";
+import eventFormReducer from "./slices/eventFormSlice";
+import eventViewSlice from "./slices/eventViewSlice";
 
 // RTK Query base APIs
 import { adminBaseApi } from "./services/adminBaseApi";
-import { playerBaseApi } from "./services/playerBaseApi"; // used for playback + analytics
+import { playerBaseApi } from "./services/playerBaseApi";
 
 export const store = configureStore({
   reducer: {
     // Redux slices
     auth: authReducer,
-    eventForm: eventReducer,
+    eventForm: eventFormReducer,
+    eventView: eventViewSlice,
 
     // RTK Query reducers
     [adminBaseApi.reducerPath]: adminBaseApi.reducer,
@@ -21,13 +24,13 @@ export const store = configureStore({
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // required for RTK Query, Dates, etc.
-    }).concat(
-      adminBaseApi.middleware,
-      playerBaseApi.middleware
-    ),
+      serializableCheck: false, // required for RTK Query
+    }).concat(adminBaseApi.middleware, playerBaseApi.middleware),
 });
 
-// Typed hooks
+/* =====================================================
+   TYPES (USED BY TYPED HOOKS)
+===================================================== */
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

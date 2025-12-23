@@ -1,10 +1,14 @@
-// src/features/events/EventForm.tsx
-
 import { useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
+import { DateTime } from "luxon";
+
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-import { loadEvent, resetForm } from "../../store/slices/eventSlice";
+import {
+  loadEvent,
+  resetForm,
+} from "../../store/slices/eventFormSlice";
 
 import {
   useCreateEventMutation,
@@ -19,7 +23,6 @@ import VideoConfigTab from "./tabs/VideoConfigTab";
 import AccessSecurityTab from "./tabs/AccessSecurityTab";
 
 import { Button } from "../../components/ui/button";
-import { ArrowLeft } from "lucide-react";
 
 type Props = {
   mode: "create" | "update";
@@ -34,23 +37,39 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
   const [createEvent] = useCreateEventMutation();
   const [updateEvent] = useUpdateEventMutation();
 
-  const { data } = useGetEventByIdQuery(eventId ?? "", {
-    skip: !eventId,
+  const { data, isFetching } = useGetEventByIdQuery(eventId ?? "", {
+    skip: !eventId || mode !== "update",
   });
 
   /* ======================================================
-     LOAD EVENT
+     LOAD EVENT (CREATE / UPDATE)
   ====================================================== */
   useEffect(() => {
     if (mode === "create") {
       dispatch(resetForm());
-    } else if (mode === "update" && data?.event) {
+      return;
+    }
+
+    if (mode === "update" && data?.event) {
       dispatch(loadEvent({ ...data.event, eventId: data.event.eventId }));
     }
   }, [mode, data, dispatch, eventId]);
 
   /* ======================================================
-     BUILD PAYLOAD (BACKEND-SAFE)
+     TIME HELPER (LOCAL → UTC)
+     Redux stores LOCAL datetime string
+     Backend ALWAYS receives UTC ISO
+  ====================================================== */
+  const localToUtcISO = (value?: string | null) => {
+    if (!value) return null;
+
+    return DateTime.fromISO(value, { zone: "local" })
+      .toUTC()
+      .toISO();
+  };
+
+  /* ======================================================
+     BUILD PAYLOAD (BACKEND SAFE)
   ====================================================== */
   const buildPayload = (): Record<string, any> => {
     const payload: Record<string, any> = {
@@ -64,10 +83,10 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
       payload.eventType = form.eventType;
     }
 
-    // SCHEDULED ONLY (time + video)
-    if (form.eventType === "scheduled") {
-      payload.startTime = form.startTime;
-      payload.endTime = form.endTime;
+    // LIVE + SCHEDULED → UTC time + video config
+    if (form.eventType === "live" || form.eventType === "scheduled") {
+      payload.startTime = localToUtcISO(form.startTime);
+      payload.endTime = localToUtcISO(form.endTime);
 
       payload.videoConfig = {
         resolution: form.videoConfig.resolution,
@@ -110,16 +129,22 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
 
       if (mode === "create") {
         await createEvent(payload).unwrap();
-      } else if (mode === "update" && eventId) {
+      }
+
+      if (mode === "update" && eventId) {
         await updateEvent({ eventId, body: payload }).unwrap();
       }
 
       dispatch(resetForm());
       onBack();
     } catch (err) {
-      console.error("Event Submit Error:", err);
+      console.error("Event submit error:", err);
     }
   };
+
+  /* ======================================================
+     UI
+  ====================================================== */
 
   const title =
     mode === "create" ? "Create New Event" : "Edit Event";
@@ -128,6 +153,10 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     mode === "create"
       ? "Add details to create a new streaming event"
       : "Update the existing event configuration";
+
+  if (mode === "update" && isFetching) {
+    return <div className="p-6 text-sm text-gray-500">Loading event…</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -141,7 +170,8 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
           }}
           className="border-gray-300"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
         </Button>
 
         <div className="flex-1">
