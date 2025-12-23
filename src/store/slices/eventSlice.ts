@@ -183,20 +183,37 @@ const slice = createSlice({
     /* =====================================================
        EVENT TYPE INVARIANTS (BACKEND CONTRACT)
     ===================================================== */
-    enforceEventTypeRules(state) {
-      if (state.eventType !== "scheduled") {
-        state.startTime = null;
-        state.endTime = null;
-        state.videoConfig = {};
-      }
+   enforceEventTypeRules(state) {
+  const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
 
-      if (state.eventType !== "vod") {
-        state.s3Key = null;
-        state.s3Prefix = null;
-      }
+  // LIVE → auto set current time
+  if (state.eventType === "live") {
+    state.startTime = nowLocal;
+    state.videoConfig = {};
+  }
 
-      state.updatedAt = new Date().toISOString();
-    },
+  // SCHEDULED → clean times (user must enter)
+  if (state.eventType === "scheduled") {
+    state.startTime = null;
+    state.endTime = null;
+  }
+
+  // VOD → no time fields
+  if (state.eventType === "vod") {
+    state.startTime = null;
+    state.endTime = null;
+    state.videoConfig = {};
+  }
+
+  // Clear VOD storage for non-VOD
+  if (state.eventType !== "vod") {
+    state.s3Key = null;
+    state.s3Prefix = null;
+  }
+
+  state.updatedAt = new Date().toISOString();
+},
+
 
     /* =====================================================
        LOAD EVENT

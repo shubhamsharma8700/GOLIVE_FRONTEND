@@ -22,7 +22,7 @@ import {
 } from "../../ui/select";
 
 import { Video, Upload, Info, Loader2 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { DateTime } from "luxon";
 import { useGetPresignedVodUrlMutation } from "../../../store/services/events.service";
 
@@ -36,24 +36,7 @@ export default function EventDetailsTab() {
 
   const isUploading = form.vodUpload.uploading;
 
-  // ----------------------------------------------------------
-  // AUTO-SET START TIME (CREATE + SCHEDULED ONLY)
-  // ----------------------------------------------------------
-  useEffect(() => {
-    if (
-      form.mode === "create" &&
-      form.eventType === "scheduled" &&
-      !form.startTime
-    ) {
-      dispatch(
-        updateField({
-          key: "startTime",
-          value: DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"),
-        })
-      );
-    }
-  }, [form.mode, form.eventType]);
-
+ 
   // ----------------------------------------------------------
   // HANDLE FILE SELECT (NO LOADING HERE)
   // ----------------------------------------------------------
@@ -172,6 +155,36 @@ export default function EventDetailsTab() {
           }
         />
       </div>
+
+      {/* LIVE TIME (READ ONLY) */}
+      {/* LIVE TIME */}
+{form.eventType === "live" && (
+  <div className="grid grid-cols-2 gap-6">
+    <div className="space-y-4 mt-4">
+      <Label>Live Start Time (Auto)</Label>
+      <Input
+        type="datetime-local"
+        value={form.startTime ?? ""}
+        readOnly
+        disabled
+        className="bg-gray-100 cursor-not-allowed"
+      />
+    </div>
+
+    <div className="space-y-4 mt-4">
+      <Label>End Time (Optional)</Label>
+      <Input
+        type="datetime-local"
+        value={form.endTime ?? ""}
+        min={form.startTime ?? undefined}
+        onChange={(e) =>
+          dispatch(updateField({ key: "endTime", value: e.target.value }))
+        }
+      />
+    </div>
+  </div>
+)}
+
 
       {/* SCHEDULED TIME */}
       {form.eventType === "scheduled" && (
