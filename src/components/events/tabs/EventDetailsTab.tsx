@@ -1,6 +1,6 @@
 // src/features/events/tabs/EventDetailsTab.tsx
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { DateTime } from "luxon";
 import { Video, Upload, Info, Loader2 } from "lucide-react";
 
@@ -38,6 +38,14 @@ export default function EventDetailsTab() {
 
   const isUploading = form.vodUpload.uploading;
   const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
+
+
+useEffect(() => {
+  if (form.eventType === "live" && !form.startTime) {
+    dispatch(updateField({ key: "startTime", value: nowLocal }));
+  }
+}, [form.eventType, form.startTime, dispatch]);
+
 
   /* ======================================================
      FILE SELECT
@@ -146,7 +154,7 @@ export default function EventDetailsTab() {
       </div>
 
       {/* DESCRIPTION */}
-      <div className="space-y-4">
+      <div className="space-y-4 mt-4">
         <Label>Description</Label>
         <Textarea
           rows={4}
@@ -159,12 +167,12 @@ export default function EventDetailsTab() {
 
       {/* LIVE */}
       {form.eventType === "live" && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6 mt-4">
           <div className="space-y-4">
             <Label>Live Start Time (Local)</Label>
             <Input
               type="datetime-local"
-              value={form.startTime ?? nowLocal}
+              value={form.startTime ?? ""}
               readOnly
               disabled
               className="bg-gray-100"

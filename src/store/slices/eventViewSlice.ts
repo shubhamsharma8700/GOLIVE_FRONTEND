@@ -1,189 +1,161 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-/* =====================================================
-   TYPES
-===================================================== */
-
 export type PlaybackMode = "live" | "vod";
 
 export interface EventViewState {
+  // Core
   eventId: string | null;
+  title: string | null;
+  description: string | null;
+  eventType: "live" | "scheduled" | "vod" | null;
+  status: string | null;
 
-  // Playback
+  // Playback (RESOLVED)
   playbackUrl: string | null;
   playbackMode: PlaybackMode | null;
 
-  // Runtime state
-  isWatching: boolean;
-  watchStartTime: string | null;
-
-  // LIVE URLs
+  // Live URLs
   cloudFrontUrl: string | null;
   mediaPackageUrl: string | null;
+  rtmpInputUrl: string | null;
 
-  // VOD URLs
+  // VOD
   vodCloudFrontUrl: string | null;
-  vod1080pUrl: string | null;
-  vod720pUrl: string | null;
-  vod480pUrl: string | null;
-
   vodStatus: string | null;
 
-  // Infra/runtime metadata (read-only)
+  // Infra
   channelState: string | null;
   mediaLiveChannelId: string | null;
   mediaPackageChannelId: string | null;
-}
+  distributionId: string | null;
+  cloudFrontDomain: string | null;
 
-/* =====================================================
-   INITIAL STATE
-===================================================== */
+  // Meta
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  startTime: string | null;
+  endTime: string | null;
+
+  // Runtime
+  isWatching: boolean;
+}
 
 const initialState: EventViewState = {
   eventId: null,
+  title: null,
+  description: null,
+  eventType: null,
+  status: null,
 
   playbackUrl: null,
   playbackMode: null,
 
-  isWatching: false,
-  watchStartTime: null,
-
   cloudFrontUrl: null,
   mediaPackageUrl: null,
+  rtmpInputUrl: null,
 
   vodCloudFrontUrl: null,
-  vod1080pUrl: null,
-  vod720pUrl: null,
-  vod480pUrl: null,
-
   vodStatus: null,
 
   channelState: null,
   mediaLiveChannelId: null,
   mediaPackageChannelId: null,
+  distributionId: null,
+  cloudFrontDomain: null,
+
+  createdBy: null,
+  createdAt: null,
+  updatedAt: null,
+  startTime: null,
+  endTime: null,
+
+  isWatching: false,
 };
 
-/* =====================================================
-   SLICE
-===================================================== */
-
-const eventViewSlice = createSlice({
+const eventSlice = createSlice({
   name: "eventView",
   initialState,
   reducers: {
-    /* ---------------- LOAD EVENT FOR VIEW ---------------- */
+    loadEvent(state, action: PayloadAction<any>) {
+      const e = action.payload;
 
-    loadEventView(
-      state,
-      action: PayloadAction<{
-        eventId: string;
-        eventType: "live" | "scheduled" | "vod";
-        cloudFrontUrl?: string | null;
-        mediaPackageUrl?: string | null;
-        vodCloudFrontUrl?: string | null;
-        vod1080pUrl?: string | null;
-        vod720pUrl?: string | null;
-        vod480pUrl?: string | null;
-        vodStatus?: string | null;
-        channelState?: string | null;
-        mediaLiveChannelId?: string | null;
-        mediaPackageChannelId?: string | null;
-      }>
-    ) {
-      const payload = action.payload;
+      /* ---------------- BASIC DATA ---------------- */
+      state.eventId = e.eventId ?? null;
+      state.title = e.title ?? null;
+      state.description = e.description ?? null;
+      state.eventType = e.eventType ?? null;
+      state.status = e.status ?? null;
 
-      state.eventId = payload.eventId;
+      /* ---------------- LIVE ---------------- */
+      state.cloudFrontUrl = e.cloudFrontUrl ?? null;
+      state.mediaPackageUrl = e.mediaPackageUrl ?? null;
+      state.rtmpInputUrl = e.rtmpInputUrl ?? null;
 
-      state.cloudFrontUrl = payload.cloudFrontUrl ?? null;
-      state.mediaPackageUrl = payload.mediaPackageUrl ?? null;
+      /* ---------------- VOD ---------------- */
+      state.vodCloudFrontUrl =
+        e.vodCloudFrontUrl ??
+        e.vodcloudFrontUrl ??
+        null;
 
-      state.vodCloudFrontUrl = payload.vodCloudFrontUrl ?? null;
-      state.vod1080pUrl = payload.vod1080pUrl ?? null;
-      state.vod720pUrl = payload.vod720pUrl ?? null;
-      state.vod480pUrl = payload.vod480pUrl ?? null;
+      state.vodStatus = e.vodStatus ?? null;
 
-      state.vodStatus = payload.vodStatus ?? null;
+      /* ---------------- INFRA ---------------- */
+      state.channelState = e.channelState ?? null;
+      state.mediaLiveChannelId = e.mediaLiveChannelId ?? null;
+      state.mediaPackageChannelId = e.mediaPackageChannelId ?? null;
+      state.distributionId = e.distributionId ?? null;
+      state.cloudFrontDomain = e.cloudFrontDomain ?? null;
 
-      state.channelState = payload.channelState ?? null;
-      state.mediaLiveChannelId = payload.mediaLiveChannelId ?? null;
-      state.mediaPackageChannelId = payload.mediaPackageChannelId ?? null;
+      /* ---------------- META ---------------- */
+      state.createdBy = e.createdBy ?? null;
+      state.createdAt = e.createdAt ?? null;
+      state.updatedAt = e.updatedAt ?? null;
+      state.startTime = e.startTime ?? null;
+      state.endTime = e.endTime ?? null;
 
-      // Reset viewer session
-      state.isWatching = false;
-      state.watchStartTime = null;
-    },
+      /* =================================================
+         PLAYBACK RESOLUTION (FINAL RULE)
+         If VOD is READY → ALWAYS VOD CLOUDFRONT URL
+      ================================================= */
 
-    /* ---------------- SET PLAYBACK ---------------- */
+      const isVodReady = state.vodStatus === "READY";
 
-    setPlayback(
-      state,
-      action: PayloadAction<{
-        playbackUrl: string | null;
-        playbackMode: PlaybackMode | null;
-      }>
-    ) {
-      state.playbackUrl = action.payload.playbackUrl;
-      state.playbackMode = action.payload.playbackMode;
-    },
-
-    /* ---------------- WATCHING STATE ---------------- */
-
-    setWatching(state, action: PayloadAction<boolean>) {
-      state.isWatching = action.payload;
-
-      if (action.payload) {
-        state.watchStartTime = new Date().toISOString();
+      if (isVodReady && state.vodCloudFrontUrl) {
+        state.playbackUrl = state.vodCloudFrontUrl;
+        state.playbackMode = "vod";
       } else {
-        state.watchStartTime = null;
+        const liveUrl =
+          state.cloudFrontUrl ||
+          state.mediaPackageUrl ||
+          null;
+
+        if (liveUrl) {
+          state.playbackUrl = liveUrl;
+          state.playbackMode = "live";
+        } else {
+          state.playbackUrl = null;
+          state.playbackMode = null;
+        }
       }
+
+      state.isWatching = false;
     },
 
-    /* ---------------- VOD STATUS UPDATE ---------------- */
-
-    updateVodStatus(
-      state,
-      action: PayloadAction<{
-        vodStatus: string;
-        vodCloudFrontUrl?: string | null;
-        vod1080pUrl?: string | null;
-        vod720pUrl?: string | null;
-        vod480pUrl?: string | null;
-      }>
-    ) {
-      state.vodStatus = action.payload.vodStatus;
-
-      if (action.payload.vodCloudFrontUrl !== undefined) {
-        state.vodCloudFrontUrl = action.payload.vodCloudFrontUrl;
-      }
-      if (action.payload.vod1080pUrl !== undefined) {
-        state.vod1080pUrl = action.payload.vod1080pUrl;
-      }
-      if (action.payload.vod720pUrl !== undefined) {
-        state.vod720pUrl = action.payload.vod720pUrl;
-      }
-      if (action.payload.vod480pUrl !== undefined) {
-        state.vod480pUrl = action.payload.vod480pUrl;
-      }
+    setWatchingState(state, action: PayloadAction<boolean>) {
+      state.isWatching = action.payload;
     },
 
-    /* ---------------- RESET ---------------- */
-
-    resetEventView() {
+    resetEvent() {
       return initialState;
     },
   },
 });
 
-/* =====================================================
-   EXPORTS
-===================================================== */
-
 export const {
-  loadEventView,
-  setPlayback,
-  setWatching,
-  updateVodStatus,
-  resetEventView,
-} = eventViewSlice.actions;
+  loadEvent,
+  setWatchingState,
+  resetEvent,
+} = eventSlice.actions;
 
-export default eventViewSlice.reducer;
+export default eventSlice.reducer;

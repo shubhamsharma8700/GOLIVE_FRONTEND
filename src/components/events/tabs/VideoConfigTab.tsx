@@ -1,6 +1,6 @@
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
-import { updateField } from "../../../store/slices/eventSlice";
+import { updateField } from "../../../store/slices/eventFormSlice";
 
 import {
   Select,
