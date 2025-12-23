@@ -236,7 +236,11 @@ const slice = createSlice({
       state.createdAt = payload.createdAt ?? state.createdAt;
       state.updatedAt = new Date().toISOString();
 
-      const liveUrl = payload.cloudFrontUrl || payload.vodcloudFrontUrl || null;
+      const liveUrl =
+        payload.vodStatus === "READY"
+          ? payload.vodCloudFrontUrl
+          : payload.cloudFrontUrl;
+
       const vodUrl =
         payload.vodCloudFrontUrl ||
         payload.vod1080pUrl ||

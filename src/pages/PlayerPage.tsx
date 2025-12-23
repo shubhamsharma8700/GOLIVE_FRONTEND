@@ -1,6 +1,7 @@
 // src/pages/PlayerPage.tsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 // Video.js
 import videojs from "video.js";
@@ -29,7 +30,7 @@ import {
 } from "../store/services/analytics.service";
 
 // Payment API
-import { useCreatePaymentSessionMutation } from "../store/services/payments.service";
+import { useCreatePaymentSessionMutation,useCheckPaymentStatusQuery } from "../store/services/payments.service";
 
 // Overlays
 import EmailOverlay from "../components/player/EmailOverlay";
@@ -39,6 +40,8 @@ import PaymentOverlay from "../components/player/PaymentAccessOverlay";
 /* ============================================================
    HELPERS
 ============================================================ */
+
+
 
 function getClientViewerId() {
   let id = localStorage.getItem("clientViewerId");
@@ -142,6 +145,10 @@ export default function PlayerPage() {
     eventId,
   ]);
 
+
+
+
+
   /* ================= REGISTER VIEWER ================= */
 
   const [registerViewer] = useRegisterViewerMutation();
@@ -174,6 +181,29 @@ export default function PlayerPage() {
   };
 
   /* ================= PAYMENT ================= */
+
+  const [searchParams] = useSearchParams();
+const paymentStatus = searchParams.get("payment");
+
+const { data: paymentStatusData } = useCheckPaymentStatusQuery(
+  { eventId, viewerToken: viewerToken! },
+  {
+    skip:
+      paymentStatus !== "success" ||
+      !viewerToken ||
+      accessMode !== "paidAccess",
+  }
+);
+
+
+useEffect(() => {
+  if (
+    paymentStatus === "success" &&
+    paymentStatusData?.payment?.status === "succeeded"
+  ) {
+    setHasAccess(true);
+  }
+}, [paymentStatus, paymentStatusData]);
 
   const [createPaymentSession] = useCreatePaymentSessionMutation();
 
@@ -325,10 +355,10 @@ export default function PlayerPage() {
   /* ================= AUTO REGISTER ================= */
 
   useEffect(() => {
-    if (accessMode === "freeAccess" && !viewerToken) {
+    if (accessMode === "freeAccess" && !viewerToken && eventId) {
       handleRegister();
     }
-  }, [accessMode]);
+  }, [accessMode, eventId]);
 
   /* ================= OVERLAYS ================= */
 

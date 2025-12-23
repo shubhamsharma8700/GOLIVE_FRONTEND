@@ -6,9 +6,8 @@ import DashboardOverview from "../pages/DashboardOverview";
 import EventManagement from "../pages/EventManagement";
 // import CreateEvent from "../pages/CreateEvent";
 import {UserManagement} from "../pages/UserManagement";
-// import ViewersManagement from "../pages/ViewersManagement";
-// import ReportsAnalytics from "../pages/ReportsAnalytics";
-// import VODLibrary from "../pages/VODLibrary";
+import {ViewersManagement} from "../pages/ViewersManagement";
+import {ReportsAnalytics} from "../pages/ReportsAnalytics";
 import PlayerPage from "../pages/PlayerPage";
 import ProtectedRoute from "../routes/ProtectedRoute";
 import NewPassword from "../pages/NewPassword";
@@ -17,7 +16,6 @@ export default function App() {
   return (
     <Routes>
       {/* Public player route (anyone) */}
-      {/* <Route path="/player/:id" element={<PlayerPage />} /> */}
 
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -36,11 +34,9 @@ export default function App() {
       >
         <Route index element={<DashboardOverview />} />
         <Route path="events" element={<EventManagement />} />
-        {/* <Route path="events/create" element={<CreateEvent />} /> */}
         <Route path="users" element={<UserManagement />} />
-        {/* <Route path="viewers" element={<ViewersManagement />} />
+        <Route path="viewers" element={<ViewersManagement />} />
         <Route path="reports" element={<ReportsAnalytics />} />
-        <Route path="vod" element={<VODLibrary />} />  */}
       </Route>
 
       {/* fallback */}

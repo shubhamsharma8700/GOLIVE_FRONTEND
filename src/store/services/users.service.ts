@@ -1,6 +1,6 @@
-import { baseApi } from "./baseApi";
+import { adminBaseApi } from "./adminBaseApi";
 
-export const adminApi = baseApi.injectEndpoints({
+export const adminApi = adminBaseApi.injectEndpoints({
     endpoints: (builder) => ({
         listAdmins: builder.query({
             query: ({ limit, lastKey, q }: { limit?: number; lastKey?: string; q?: string } = {}) => {

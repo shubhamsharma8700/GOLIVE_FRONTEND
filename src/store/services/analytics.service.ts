@@ -1,11 +1,11 @@
-// src/store/services/analytics.service.ts
-import { baseApi } from "./baseApi";
+// src/store/services/playerApi.ts
+import { playerBaseApi } from "./playerBaseApi";
 
 /**
  * Analytics API
  * Viewer session lifecycle + admin analytics
  */
-export const analyticsApi = baseApi.injectEndpoints({
+export const analyticsApi = playerBaseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     /* ============================================================

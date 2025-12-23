@@ -1,6 +1,6 @@
-import { baseApi } from "./baseApi";
+import { adminBaseApi } from "./adminBaseApi";
 
-export const authApi = baseApi.injectEndpoints({
+export const authApi = adminBaseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     // REGISTER ADMIN

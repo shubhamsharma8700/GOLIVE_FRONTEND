@@ -1,6 +1,6 @@
-import { baseApi } from "./baseApi";
+import { adminBaseApi } from "./adminBaseApi";
 
-export const eventsApi = baseApi.injectEndpoints({
+export const eventsApi = adminBaseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     // ------------------------------------------------------

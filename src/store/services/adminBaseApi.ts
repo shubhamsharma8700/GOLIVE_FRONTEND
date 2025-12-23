@@ -1,12 +1,13 @@
+// src/store/services/adminBaseApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../store";
 
-export const baseApi = createApi({
-  reducerPath: "api",
+export const adminBaseApi = createApi({
+  reducerPath: "adminApi",
 
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_URL}`, 
-    credentials: "include", // important if backend sets cookies
+    baseUrl: import.meta.env.VITE_API_URL,
+    credentials: "include",
 
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
@@ -14,6 +15,7 @@ export const baseApi = createApi({
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
+
       headers.set("Content-Type", "application/json");
       return headers;
     },
@@ -25,10 +27,6 @@ export const baseApi = createApi({
     "Events",
     "Users",
     "Viewers",
-    "VOD",
-    "Analytics",
-    "Player",
-    "Payments",
   ],
 
   endpoints: () => ({}),

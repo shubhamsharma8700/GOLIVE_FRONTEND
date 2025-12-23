@@ -1,7 +1,7 @@
 // src/store/services/playerApi.ts
-import { baseApi } from "./baseApi";
+import { playerBaseApi } from "./playerBaseApi";
 
-export const playerApi = baseApi.injectEndpoints({
+export const playerApi = playerBaseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     // 0️⃣ Validate viewer token (NEW)

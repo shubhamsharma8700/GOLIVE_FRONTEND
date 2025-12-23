@@ -1,6 +1,7 @@
-import { baseApi } from "./baseApi";
+// src/store/services/playerApi.ts
+import { playerBaseApi } from "./playerBaseApi";
 
-export const paymentsApi = baseApi.injectEndpoints({
+export const paymentsApi = playerBaseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     // =========================================================
