@@ -10,7 +10,7 @@ export interface EventViewState {
   eventType: "live" | "scheduled" | "vod" | null;
   status: string | null;
 
-  // Playback (RESOLVED)
+  // Playback
   playbackUrl: string | null;
   playbackMode: PlaybackMode | null;
 
@@ -19,9 +19,20 @@ export interface EventViewState {
   mediaPackageUrl: string | null;
   rtmpInputUrl: string | null;
 
-  // VOD
+  // VOD (basic)
   vodCloudFrontUrl: string | null;
   vodStatus: string | null;
+
+  // VOD (extended)
+  vod1080pUrl: string | null;
+  vod720pUrl: string | null;
+  vod480pUrl: string | null;
+  vodJobId: string | null;
+  vodOutputPath: string | null;
+  vodProcessingStartTime: string | null;
+  vodInputSource: string | null;
+  vodS3Path: string | null;
+  vodSourceType: string | null;
 
   // Infra
   channelState: string | null;
@@ -58,6 +69,16 @@ const initialState: EventViewState = {
   vodCloudFrontUrl: null,
   vodStatus: null,
 
+  vod1080pUrl: null,
+  vod720pUrl: null,
+  vod480pUrl: null,
+  vodJobId: null,
+  vodOutputPath: null,
+  vodProcessingStartTime: null,
+  vodInputSource: null,
+  vodS3Path: null,
+  vodSourceType: null,
+
   channelState: null,
   mediaLiveChannelId: null,
   mediaPackageChannelId: null,
@@ -80,7 +101,7 @@ const eventSlice = createSlice({
     loadEvent(state, action: PayloadAction<any>) {
       const e = action.payload;
 
-      /* ---------------- BASIC DATA ---------------- */
+      /* ---------------- BASIC ---------------- */
       state.eventId = e.eventId ?? null;
       state.title = e.title ?? null;
       state.description = e.description ?? null;
@@ -99,6 +120,15 @@ const eventSlice = createSlice({
         null;
 
       state.vodStatus = e.vodStatus ?? null;
+      state.vod1080pUrl = e.vod1080pUrl ?? null;
+      state.vod720pUrl = e.vod720pUrl ?? null;
+      state.vod480pUrl = e.vod480pUrl ?? null;
+      state.vodJobId = e.vodJobId ?? null;
+      state.vodOutputPath = e.vodOutputPath ?? null;
+      state.vodProcessingStartTime = e.vodProcessingStartTime ?? null;
+      state.vodInputSource = e.vodInputSource ?? null;
+      state.vodS3Path = e.vodS3Path ?? null;
+      state.vodSourceType = e.vodSourceType ?? null;
 
       /* ---------------- INFRA ---------------- */
       state.channelState = e.channelState ?? null;
@@ -115,10 +145,9 @@ const eventSlice = createSlice({
       state.endTime = e.endTime ?? null;
 
       /* =================================================
-         PLAYBACK RESOLUTION (FINAL RULE)
-         If VOD is READY → ALWAYS VOD CLOUDFRONT URL
+         PLAYBACK RULE
+         If VOD is READY → ALWAYS PLAY VOD
       ================================================= */
-
       const isVodReady = state.vodStatus === "READY";
 
       if (isVodReady && state.vodCloudFrontUrl) {
@@ -130,13 +159,8 @@ const eventSlice = createSlice({
           state.mediaPackageUrl ||
           null;
 
-        if (liveUrl) {
-          state.playbackUrl = liveUrl;
-          state.playbackMode = "live";
-        } else {
-          state.playbackUrl = null;
-          state.playbackMode = null;
-        }
+        state.playbackUrl = liveUrl;
+        state.playbackMode = liveUrl ? "live" : null;
       }
 
       state.isWatching = false;

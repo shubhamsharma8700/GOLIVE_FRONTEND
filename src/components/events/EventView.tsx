@@ -150,10 +150,10 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
       </div>
 
       {event.description && <DescriptionSection text={event.description} />}
-
-      {event.vodStatus && <VodSection event={event} />}
       {/* Live streaming details (hide for pure VOD events) */}
       {event.eventType !== "vod" && <StreamConfig event={event} />}
+
+      {event.vodStatus && <VodSection event={event} />}
 
     </div>
   );
@@ -279,27 +279,119 @@ function DescriptionSection({ text }: any) {
 }
 
 function VodSection({ event }: any) {
+  const hasVariants =
+    event.vod1080pUrl || event.vod720pUrl || event.vod480pUrl;
+
+  const statusColor =
+    event.vodStatus === "READY"
+      ? "text-green-600"
+      : event.vodStatus === "PROCESSING"
+      ? "text-yellow-600"
+      : event.vodStatus === "FAILED"
+      ? "text-red-600"
+      : "text-gray-600";
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center gap-2 mb-5">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-2">
         <PlayCircle size={20} className="text-blue-600" />
         <h3 className="text-lg font-semibold text-gray-900">
           VOD Configuration
         </h3>
       </div>
 
+      {/* Status */}
       <InfoField label="VOD Status">
-        <span className="text-sm font-semibold">{event.vodStatus}</span>
+        <span className={`text-sm font-semibold ${statusColor}`}>
+          {event.vodStatus || "N/A"}
+        </span>
       </InfoField>
 
+      {/* Master Playback */}
       {event.vodCloudFrontUrl && (
-        <InfoField label="VOD CloudFront URL">
+        <InfoField label="VOD Playback URL (Master)">
           <CopyText text={event.vodCloudFrontUrl} />
         </InfoField>
+      )}
+
+      {/* Processing Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <InfoField label="VOD Job ID">
+          <span className="text-sm font-mono text-gray-900">
+            {event.vodJobId || "N/A"}
+          </span>
+        </InfoField>
+
+        <InfoField label="Source Type">
+          <span className="text-sm text-gray-900">
+            {event.vodSourceType || "N/A"}
+          </span>
+        </InfoField>
+
+        <InfoField label="Processing Start Time">
+          <span className="text-sm text-gray-900">
+            {event.vodProcessingStartTime
+              ? new Date(event.vodProcessingStartTime).toLocaleString()
+              : "N/A"}
+          </span>
+        </InfoField>
+
+        <InfoField label="Output Path">
+          <span className="text-sm text-gray-900 break-all">
+            {event.vodOutputPath || "N/A"}
+          </span>
+        </InfoField>
+      </div>
+
+      {/* S3 Paths */}
+      {event.vodInputSource && (
+        <InfoField label="Input Source (S3)">
+          <span className="text-sm text-gray-900 break-all">
+            {event.vodInputSource}
+          </span>
+        </InfoField>
+      )}
+
+      {event.vodS3Path && (
+        <InfoField label="Output S3 Path">
+          <span className="text-sm text-gray-900 break-all">
+            {event.vodS3Path}
+          </span>
+        </InfoField>
+      )}
+
+      {/* Quality URLs */}
+      {hasVariants && (
+        <div className="pt-4 border-t border-gray-200 space-y-4">
+          <h4 className="text-sm font-semibold text-gray-700">
+            Available Quality Streams
+          </h4>
+
+          {event.vod1080pUrl && (
+            <InfoField label="1080p (Full HD)">
+              <CopyText text={event.vod1080pUrl} />
+            </InfoField>
+          )}
+
+          {event.vod720pUrl && (
+            <InfoField label="720p (HD)">
+              <CopyText text={event.vod720pUrl} />
+            </InfoField>
+          )}
+
+          {event.vod480pUrl && (
+            <InfoField label="480p (SD)">
+              <CopyText text={event.vod480pUrl} />
+            </InfoField>
+          )}
+        </div>
       )}
     </div>
   );
 }
+
+
 
 function StreamConfig({ event }: any) {
   return (
@@ -454,11 +546,6 @@ function StatusBadge({ status }: any) {
     </span>
   );
 }
-
-// function formatDate(date?: string | null) {
-//   if (!date) return "N/A";
-//   return new Date(date).toLocaleString();
-// }
 
 function formatLocalDateTime(date?: string | null) {
   if (!date) return "N/A";
