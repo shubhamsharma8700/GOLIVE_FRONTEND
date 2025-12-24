@@ -116,11 +116,11 @@ export default function AccessSecurityTab() {
           <Input
             type="password"
             placeholder="Enter event password"
-            value={form.accessPasswordHash ?? ""}
+            value={form.accessPassword ?? ""}
             onChange={(e) =>
               dispatch(
                 updateField({
-                  key: "accessPasswordHash",
+                  key: "accessPassword",
                   value: e.target.value,
                 })
               )

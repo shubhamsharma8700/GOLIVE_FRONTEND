@@ -41,7 +41,7 @@ export interface EventFormState {
 
   paymentAmount: number | null;
   currency: string | null;
-  accessPasswordHash: string | null;
+  accessPassword: string | null;
 
   // VOD upload (admin-only)
   s3Key: string | null;
@@ -90,7 +90,7 @@ const initialState: EventFormState = {
 
   paymentAmount: null,
   currency: null,
-  accessPasswordHash: null,
+  accessPassword: null,
 
   s3Key: null,
   s3Prefix: null,
@@ -212,8 +212,8 @@ const eventFormSlice = createSlice({
 
       state.paymentAmount = payload.paymentAmount ?? state.paymentAmount;
       state.currency = payload.currency ?? state.currency;
-      state.accessPasswordHash =
-        payload.accessPasswordHash ?? state.accessPasswordHash;
+      state.accessPassword =
+        payload.accessPassword ?? state.accessPassword;
 
       state.s3Key = payload.s3Key ?? state.s3Key;
       state.s3Prefix = payload.s3Prefix ?? state.s3Prefix;

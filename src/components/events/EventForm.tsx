@@ -109,7 +109,7 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
 
     if (form.accessMode === "passwordAccess") {
-      payload.accessPasswordHash = form.accessPasswordHash;
+      payload.accessPassword = form.accessPassword;
     }
 
     if (form.accessMode === "paidAccess") {
