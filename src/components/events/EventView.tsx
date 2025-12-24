@@ -1,10 +1,10 @@
-// src/components/events/EventView.tsx
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGetEventByIdQuery } from "../../store/services/events.service";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { DateTime } from "luxon";
 
+import EmbedPlayerModal from "./EmbedPlayerModal";
 
 import { loadEvent, setWatchingState } from "../../store/slices/eventViewSlice";
 
@@ -46,8 +46,10 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<Player | null>(null);
 
+  const [showEmbed, setShowEmbed] = useState(false);
+
   /* ------------------------------------------------------
-     LOAD EVENT INTO REDUX (PLAYBACK RESOLVED IN SLICE)
+     LOAD EVENT INTO REDUX
   ------------------------------------------------------ */
   useEffect(() => {
     if (!data?.event) return;
@@ -55,12 +57,11 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
   }, [data, dispatch]);
 
   /* ------------------------------------------------------
-     VIDEO PLAYER INIT + URL UPDATE
+     VIDEO PLAYER INIT + UPDATE
   ------------------------------------------------------ */
   useEffect(() => {
     if (!videoRef.current || !event.playbackUrl) return;
 
-    // INIT PLAYER (ONLY ONCE)
     if (!playerRef.current) {
       const player = videojs(videoRef.current, {
         autoplay: false,
@@ -90,7 +91,6 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
 
       playerRef.current = player;
 
-      // QUALITY SELECTOR (safe)
       player.ready(() => {
         const anyPlayer = player as any;
         if (anyPlayer.hlsQualitySelector) {
@@ -98,12 +98,9 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
         }
       });
 
-      // AUTO-RETRY ON 403 / SRC ERROR (CloudFront warm-up)
       player.on("error", () => {
         const err = player.error();
-        if (!err) return;
-
-        if (err.code === 4) {
+        if (err?.code === 4) {
           setTimeout(() => {
             player.src({
               src: event.playbackUrl!,
@@ -114,7 +111,6 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
       });
     }
 
-    // UPDATE SOURCE (NO RECREATE, NO DISPOSE)
     playerRef.current.src({
       src: event.playbackUrl,
       type: "application/x-mpegURL",
@@ -122,7 +118,6 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
 
     dispatch(setWatchingState(true));
   }, [event.playbackUrl, event.playbackMode, dispatch]);
-
 
   if (isLoading) {
     return (
@@ -137,7 +132,11 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
 
   return (
     <div className="max-w-7xl mx-auto space-y-2 pb-20">
-      <Header event={event} onBack={onBack} />
+      <Header
+        event={event}
+        onBack={onBack}
+        onEmbed={() => setShowEmbed(true)}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
@@ -150,27 +149,31 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
       </div>
 
       {event.description && <DescriptionSection text={event.description} />}
-      {/* Live streaming details (hide for pure VOD events) */}
       {event.eventType !== "vod" && <StreamConfig event={event} />}
-
       {event.vodStatus && <VodSection event={event} />}
 
+      {/* EMBED MODAL */}
+      <EmbedPlayerModal
+        open={showEmbed}
+        onClose={() => setShowEmbed(false)}
+        eventId={event.eventId || ""}
+      />
     </div>
   );
 }
 
 /* ------------------------------------------------------
-   UI COMPONENTS
+   HEADER
 ------------------------------------------------------ */
 
-function Header({ event, onBack }: any) {
+function Header({ event, onBack, onEmbed }: any) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
           >
             <ArrowLeft size={12} />
             <span className="font-medium">Back</span>
@@ -185,6 +188,14 @@ function Header({ event, onBack }: any) {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={onEmbed}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+          >
+            <Link size={14} />
+            Embed Player
+          </button>
+
           <TypeBadge type={event.eventType} />
           <StatusBadge status={event.status} />
         </div>
@@ -193,7 +204,11 @@ function Header({ event, onBack }: any) {
   );
 }
 
-function PlayerBlock({ videoRef }: { videoRef: any }) {
+/* ------------------------------------------------------
+   PLAYER
+------------------------------------------------------ */
+
+function PlayerBlock({ videoRef }: any) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div className="aspect-video bg-black rounded-lg overflow-hidden">
@@ -530,7 +545,6 @@ function InfoField({ label, icon, children }: any) {
     </div>
   );
 }
-
 function TypeBadge({ type }: any) {
   return (
     <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100">
@@ -555,4 +569,3 @@ function formatLocalDateTime(date?: string | null) {
     .toLocal()
     .toFormat("dd LLL yyyy, hh:mm a");
 }
-
