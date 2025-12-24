@@ -84,16 +84,38 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
 
     // LIVE + SCHEDULED → UTC time + video config
-    if (form.eventType === "live" || form.eventType === "scheduled") {
-      payload.startTime = localToUtcISO(form.startTime);
-      payload.endTime = localToUtcISO(form.endTime);
+    // if (form.eventType === "live" || form.eventType === "scheduled") {
+    //   payload.startTime = localToUtcISO(form.startTime);
+    //   payload.endTime = localToUtcISO(form.endTime);
 
-      payload.videoConfig = {
-        resolution: form.videoConfig.resolution,
-        frameRate: form.videoConfig.frameRate,
-        bitrateProfile: form.videoConfig.bitrateProfile,
-      };
-    }
+    //   payload.videoConfig = {
+    //     resolution: form.videoConfig.resolution,
+    //     frameRate: form.videoConfig.frameRate,
+    //     bitrateProfile: form.videoConfig.bitrateProfile,
+    //   };
+    // }
+
+    // CREATE ONLY → LIVE + SCHEDULED
+if (
+  mode === "create" &&
+  (form.eventType === "live" || form.eventType === "scheduled")
+) {
+  payload.startTime = localToUtcISO(form.startTime);
+  payload.endTime = localToUtcISO(form.endTime);
+
+  payload.videoConfig = {
+    resolution: form.videoConfig.resolution,
+    frameRate: form.videoConfig.frameRate,
+    bitrateProfile: form.videoConfig.bitrateProfile,
+  };
+}
+
+// UPDATE ONLY → SCHEDULED (allow time edits)
+if (mode === "update" && form.eventType === "scheduled") {
+  payload.startTime = localToUtcISO(form.startTime);
+  payload.endTime = localToUtcISO(form.endTime);
+}
+
 
     // VOD ONLY
     if (form.eventType === "vod") {
