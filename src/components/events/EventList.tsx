@@ -39,7 +39,7 @@ export default function EventList({
   const handleDelete = async (eventId: string) => {
     try {
       await deleteEvent(eventId).unwrap();
-      toast.success("Event deleted successfully");
+      toast.success("Event deletion initiated successfully");
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete event");
@@ -114,10 +114,10 @@ export default function EventList({
                               event.status === "live"
                                 ? "bg-green-100 text-green-800"
                                 : event.status === "scheduled"
-                                ? "bg-blue-100 text-blue-800"
-                                : event.status === "uploaded"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-700"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : event.status === "uploaded"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-700"
                             }
                           >
                             {event.status === "live" ? (
@@ -167,8 +167,9 @@ export default function EventList({
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDelete(event.eventId)}
+                            disabled={event.isDeletionInProgress}
                           >
-                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                            <Trash2 className="w-4 h-4 mr-1" /> {event.isDeletionInProgress?"Deleting...":"Delete"}
                           </Button>
                         </td>
                       </tr>
