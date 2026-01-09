@@ -304,6 +304,8 @@ useEffect(() => {
           sessionId: sessionIdRef.current,
           seconds: 10,
           viewerToken,
+          eventId,
+          clientViewerId
         });
       }, 10000);
     };

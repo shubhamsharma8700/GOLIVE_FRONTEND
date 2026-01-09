@@ -42,6 +42,8 @@ export const analyticsApi = playerBaseApi.injectEndpoints({
         sessionId: string;
         seconds: number;
         viewerToken: string;
+        eventId: string;
+        clientViewerId: string;
       }
     >({
       query: ({ viewerToken, ...body }) => ({
