@@ -120,6 +120,28 @@ export function ViewersManagement() {
       ? "bg-gradient-to-br from-[#B89B5E] to-[#8B7547]"
       : "bg-gradient-to-br from-gray-500 to-gray-600";
 
+
+  const formatDuration = (totalSeconds = 0) => {
+    const seconds = Math.floor(totalSeconds);
+
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hrs > 0) {
+      if (mins > 0 && secs > 0) return `${hrs} hr ${mins} min ${secs} sec`;
+      if (mins > 0) return `${hrs} hr ${mins} min`;
+      return `${hrs} hr ${secs} sec`;
+    }
+
+    if (mins > 0) {
+      return `${mins} min ${secs} sec`;
+    }
+
+    return `${secs} sec`;
+  };
+
+
   /* ================= RENDER ================= */
 
   return (
@@ -162,7 +184,7 @@ export function ViewersManagement() {
                   "Email",
                   "Type",
                   "Watching Hours",
-                  "Status",
+                  "Event Type",
                   "Last Active",
                   "Actions",
                 ].map((label) => (
@@ -171,7 +193,7 @@ export function ViewersManagement() {
                     className="p-4 text-left text-sm text-[#B89B5E]"
                   >
                     {label === "Viewer Name" ||
-                    label === "Watching Hours" ? (
+                      label === "Watching Hours" ? (
                       <button
                         onClick={() =>
                           handleSort(
@@ -215,18 +237,18 @@ export function ViewersManagement() {
                     </td>
 
                     <td className="p-4">
-                      {viewer.email || "-"}
+                      {viewer.email || "N/A"}
                     </td>
 
                     <td className="p-4">
-                      <Badge>{viewer.type}</Badge>
+                      <Badge>{viewer.event.accessMode}</Badge>
                     </td>
 
                     <td className="p-4">
-                      {(viewer.watchingHours ?? 0).toFixed(1)} hrs
+                       {formatDuration(viewer.totalWatchTime ?? 0)}
                     </td>
 
-                    <td className="p-4">{viewer.status}</td>
+                    <td className="p-4">{viewer?.event?.eventType || "N/A"}</td>
 
                     <td className="p-4">
                       {viewer.lastActiveAt

@@ -156,7 +156,7 @@ export function UserManagement() {
                   <th className="p-4 text-left text-sm text-[#B89B5E]">
                     Created At
                   </th>
-                    <th className="p-4 text-left text-sm text-[#B89B5E]">Events</th>
+                    <th className="p-4 text-left text-sm text-[#B89B5E]">Last Active</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Actions</th>
                 </tr>
               </thead>
@@ -195,7 +195,7 @@ export function UserManagement() {
 
                         <CalendarIcon className="w-4 h-4 text-[#B89B5E]" />
 
-                        <span className="text-sm">{admin.eventsCreated || 0}</span>
+                        <span className="text-sm">{new Date(admin.createdAt).toLocaleString() || 0}</span>
 
                       </div>
 
@@ -203,7 +203,7 @@ export function UserManagement() {
 
                     {/* CREATED AT */}
                     <td className="p-4 text-sm text-[#6B6B6B]">
-                      {new Date(admin.createdAt).toLocaleDateString()}
+                      {new Date(admin.lastLoginAt).toLocaleString()}
                     </td>
 
                     {/* ACTIONS */}

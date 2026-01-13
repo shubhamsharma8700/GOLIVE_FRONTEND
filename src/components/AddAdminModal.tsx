@@ -32,7 +32,8 @@ export default function AddAdminModal({ open, setOpen, refetch }: any) {
       // ⭐ REFRESH ADMIN LIST
       refetch?.();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Error creating admin");
+      console.error("Error creating admin:", error);
+      toast.error(error?.data?.error || "Error creating admin");
     }
   };
 
