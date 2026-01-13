@@ -331,7 +331,7 @@ useEffect(() => {
       sessionIdRef.current = null;
     };
 
-    player.one("play", async () => {
+    player.on("play", async () => {
       isPlayingRef.current = true;
       await startAnalytics();
       startHeartbeat();
