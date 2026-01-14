@@ -41,8 +41,6 @@ import PaymentOverlay from "../components/player/PaymentAccessOverlay";
    HELPERS
 ============================================================ */
 
-
-
 function getClientViewerId() {
   let id = localStorage.getItem("clientViewerId");
   if (!id) {
@@ -93,6 +91,7 @@ export default function PlayerPage() {
   const clientViewerId = useMemo(getClientViewerId, []);
   const [viewerToken, setViewerToken] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   /* ================= ACCESS CONFIG ================= */
 
@@ -118,7 +117,10 @@ export default function PlayerPage() {
   );
 
   useEffect(() => {
-    if (!storedViewerToken) return;
+    if (!storedViewerToken) {
+      setValidationAttempted(true);
+      return;
+    }
 
     if (isValidateSuccess && validateData?.success) {
       setViewerToken(storedViewerToken);
@@ -129,12 +131,14 @@ export default function PlayerPage() {
         validateData.viewer.accessVerified === true;
 
       setHasAccess(canAccess);
+      setValidationAttempted(true);
     }
 
     if (isValidateError) {
       clearViewerToken(eventId);
       setViewerToken(null);
       setHasAccess(false);
+      setValidationAttempted(true);
     }
   }, [
     storedViewerToken,
@@ -144,10 +148,6 @@ export default function PlayerPage() {
     accessMode,
     eventId,
   ]);
-
-
-
-
 
   /* ================= REGISTER VIEWER ================= */
 
@@ -183,27 +183,26 @@ export default function PlayerPage() {
   /* ================= PAYMENT ================= */
 
   const [searchParams] = useSearchParams();
-const paymentStatus = searchParams.get("payment");
+  const paymentStatus = searchParams.get("payment");
 
-const { data: paymentStatusData } = useCheckPaymentStatusQuery(
-  { eventId, viewerToken: viewerToken! },
-  {
-    skip:
-      paymentStatus !== "success" ||
-      !viewerToken ||
-      accessMode !== "paidAccess",
-  }
-);
+  const { data: paymentStatusData } = useCheckPaymentStatusQuery(
+    { eventId, viewerToken: viewerToken! },
+    {
+      skip:
+        paymentStatus !== "success" ||
+        !viewerToken ||
+        accessMode !== "paidAccess",
+    }
+  );
 
-
-useEffect(() => {
-  if (
-    paymentStatus === "success" &&
-    paymentStatusData?.payment?.status === "succeeded"
-  ) {
-    setHasAccess(true);
-  }
-}, [paymentStatus, paymentStatusData]);
+  useEffect(() => {
+    if (
+      paymentStatus === "success" &&
+      paymentStatusData?.payment?.status === "succeeded"
+    ) {
+      setHasAccess(true);
+    }
+  }, [paymentStatus, paymentStatusData]);
 
   const [createPaymentSession] = useCreatePaymentSessionMutation();
 
@@ -357,10 +356,15 @@ useEffect(() => {
   /* ================= AUTO REGISTER ================= */
 
   useEffect(() => {
-    if (accessMode === "freeAccess" && !viewerToken && eventId) {
+    if (
+      accessMode === "freeAccess" &&
+      !viewerToken &&
+      eventId &&
+      validationAttempted
+    ) {
       handleRegister();
     }
-  }, [accessMode, eventId]);
+  }, [accessMode, eventId, viewerToken, validationAttempted]);
 
   /* ================= OVERLAYS ================= */
 
