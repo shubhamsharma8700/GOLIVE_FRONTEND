@@ -219,7 +219,7 @@ export function UserManagement() {
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem
+                          {/* <DropdownMenuItem
                             onClick={() =>
                               handleStatusToggle(
                                 admin.adminID,
@@ -232,7 +232,7 @@ export function UserManagement() {
                             {admin.status === "active"
                               ? "Deactivate"
                               : "Activate"}
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
 
                           <DropdownMenuItem
                             className="text-red-500 focus:bg-red-50"

@@ -241,7 +241,7 @@ export function ViewersManagement() {
                     </td>
 
                     <td className="p-4">
-                      <Badge>{viewer.event.accessMode}</Badge>
+                      <Badge>{viewer?.event?.accessMode}</Badge>
                     </td>
 
                     <td className="p-4">

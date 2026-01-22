@@ -204,8 +204,8 @@ if (mode === "update" && form.eventType === "scheduled") {
 
       {/* Tabs */}
       <EventTabs>
-        <EventDetailsTab />
-        <VideoConfigTab />
+        <EventDetailsTab mode={mode}/>
+        <VideoConfigTab  mode={mode}/>
         <AccessSecurityTab />
       </EventTabs>
 

@@ -28,9 +28,14 @@ import {
 
 import { useGetPresignedVodUrlMutation } from "../../../store/services/events.service";
 
-export default function EventDetailsTab() {
+type Props = {
+  mode: "create" | "update";
+};
+
+export default function EventDetailsTab({ mode }: Props) {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
+  console.log("EventDetailsTab render", { form });
 
   const [getPresign] = useGetPresignedVodUrlMutation();
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -39,12 +44,19 @@ export default function EventDetailsTab() {
   const isUploading = form.vodUpload.uploading;
   const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
 
+  const startTimeValue = form.startTime
+  ? DateTime.fromISO(form.startTime).toFormat("yyyy-MM-dd'T'HH:mm")
+  : "";
 
-useEffect(() => {
-  if (form.eventType === "live" && !form.startTime) {
-    dispatch(updateField({ key: "startTime", value: nowLocal }));
-  }
-}, [form.eventType, form.startTime, dispatch]);
+  const endTimeValue = form.endTime
+  ? DateTime.fromISO(form.endTime).toFormat("yyyy-MM-dd'T'HH:mm")
+  : "";
+
+  useEffect(() => {
+    if (form.eventType === "live" && !form.startTime) {
+      dispatch(updateField({ key: "startTime", value: nowLocal }));
+    }
+  }, [form.eventType, form.startTime, dispatch]);
 
 
   /* ======================================================
@@ -134,9 +146,14 @@ useEffect(() => {
         </div>
 
         <div className="space-y-4">
-          <Label>Event Type</Label>
+          <Label>Event Type  {mode === "update" && (
+            <p className="text-xs text-gray-500">
+              *Event type cannot be changed after creation*.
+            </p>
+          )}</Label>
           <Select
             value={form.eventType}
+            disabled={mode === "update"}
             onValueChange={(v) =>
               dispatch(updateField({ key: "eventType", value: v }))
             }
@@ -150,6 +167,7 @@ useEffect(() => {
               <SelectItem value="vod">VOD</SelectItem>
             </SelectContent>
           </Select>
+
         </div>
       </div>
 
@@ -172,9 +190,9 @@ useEffect(() => {
             <Label>Live Start Time (Local)</Label>
             <Input
               type="datetime-local"
-              value={form.startTime ?? ""}
+              value={startTimeValue}
               readOnly
-              disabled
+              disabled={mode === "update" && form.status === "Ready for Live"}
               className="bg-gray-100"
             />
           </div>
@@ -183,11 +201,12 @@ useEffect(() => {
             <Label>End Time (Optional)</Label>
             <Input
               type="datetime-local"
-              value={form.endTime ?? ""}
+              value={endTimeValue}
               min={form.startTime ?? undefined}
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
+              disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
@@ -200,11 +219,12 @@ useEffect(() => {
             <Label>Start Time (Local)</Label>
             <Input
               type="datetime-local"
-              value={form.startTime ?? ""}
+              value={startTimeValue}
               min={nowLocal}
               onChange={(e) =>
                 dispatch(updateField({ key: "startTime", value: e.target.value }))
               }
+              disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
 
@@ -212,11 +232,12 @@ useEffect(() => {
             <Label>End Time (Optional)</Label>
             <Input
               type="datetime-local"
-              value={form.endTime ?? ""}
+              value={endTimeValue}
               min={form.startTime ?? undefined}
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
+              disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
@@ -243,6 +264,7 @@ useEffect(() => {
             accept="video/*"
             className="hidden"
             onChange={(e) => handleSelect(e.target.files?.[0])}
+            disabled={mode === "update"}
           />
 
           <div className="space-y-3">
@@ -258,7 +280,7 @@ useEffect(() => {
 
               <button
                 type="button"
-                disabled={isUploading}
+                disabled={isUploading || mode === "update"}
                 onClick={() => fileRef.current?.click()}
                 className="px-4 py-2 bg-[#B89B5E] text-white rounded-md hover:bg-[#A28452] flex items-center gap-2 disabled:opacity-50"
               >
@@ -268,7 +290,7 @@ useEffect(() => {
 
               <button
                 type="button"
-                disabled={isUploading}
+                disabled={isUploading || mode === "update"}
                 onClick={handleUpload}
                 className="px-4 py-2 border rounded-md bg-[#B89B5E]/10 text-[#B89B5E] hover:bg-[#B89B5E]/20 disabled:opacity-50 flex items-center gap-2"
               >
@@ -305,7 +327,7 @@ useEffect(() => {
             <Info className="w-4 h-4 text-blue-600" />
             Files are uploaded to S3 and streamed via CloudFront CDN.
           </div>
-       </div>
+        </div>
       )}
     </div>
   );

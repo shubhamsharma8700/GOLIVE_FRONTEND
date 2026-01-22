@@ -12,7 +12,11 @@ import {
 
 import { Label } from "../../../components/ui/label";
 
-export default function VideoConfigTab() {
+type Props = {
+  mode: "create" | "update";
+};
+
+export default function VideoConfigTab({ mode }: Props) {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
 
@@ -64,6 +68,7 @@ export default function VideoConfigTab() {
             <Select
               value={config.resolution ?? "1080p"}
               onValueChange={(v) => updateVideoConfig("resolution", v)}
+              disabled={mode === "update"}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select resolution" />
@@ -84,6 +89,7 @@ export default function VideoConfigTab() {
               onValueChange={(v) =>
                 updateVideoConfig("frameRate", Number(v))
               }
+              disabled={mode === "update"}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select FPS" />
@@ -104,6 +110,7 @@ export default function VideoConfigTab() {
               onValueChange={(v) =>
                 updateVideoConfig("bitrateProfile", v)
               }
+              disabled={mode === "update"}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select bitrate" />
