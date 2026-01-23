@@ -9,7 +9,7 @@ import {
   Edit2,
   Plus,
   Calendar as CalendarIcon,
-  UserX,
+  // UserX,
   Trash2,
 } from "lucide-react";
 
@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import {
   useListAdminsQuery,
   useDeleteAdminMutation,
-  useUpdateAdminMutation,
+  // useUpdateAdminMutation,
 } from "../store/services/users.service";
 
 import AddAdminModal from "../components/AddAdminModal";
@@ -41,7 +41,7 @@ export function UserManagement() {
   });
 
   const [deleteAdmin] = useDeleteAdminMutation();
-  const [updateAdmin] = useUpdateAdminMutation();
+  // const [updateAdmin] = useUpdateAdminMutation();
 
   const admins = data?.items || [];
 
@@ -70,26 +70,26 @@ export function UserManagement() {
   };
 
   // ⭐ Activate / Deactivate Admin
-  const handleStatusToggle = async (
-    adminID: string,
-    name: string,
-    status: string
-  ) => {
-    try {
-      await updateAdmin({
-        adminID,
-        status: status === "active" ? "inactive" : "active",
-      }).unwrap();
+  // const handleStatusToggle = async (
+  //   adminID: string,
+  //   name: string,
+  //   status: string
+  // ) => {
+  //   try {
+  //     await updateAdmin({
+  //       adminID,
+  //       status: status === "active" ? "inactive" : "active",
+  //     }).unwrap();
 
-      toast.success(
-        `${name} has been ${status === "active" ? "deactivated" : "activated"}`
-      );
+  //     toast.success(
+  //       `${name} has been ${status === "active" ? "deactivated" : "activated"}`
+  //     );
 
-      refetch();
-    } catch {
-      toast.error("Failed to update admin status");
-    }
-  };
+  //     refetch();
+  //   } catch {
+  //     toast.error("Failed to update admin status");
+  //   }
+  // };
 
   if (isLoading) return <div className="p-6 text-center">Loading admins...</div>;
 
