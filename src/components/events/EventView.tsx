@@ -196,8 +196,18 @@ function Header({ event, onBack, onEmbed }: any) {
             Embed Player
           </button>
 
-          <TypeBadge type={event.eventType} />
-          <StatusBadge status={event.status} />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium text-gray-600">Type:</span>
+              <TypeBadge type={event.eventType} />
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium text-gray-600">Status:</span>
+              <StatusBadge status={event.status} />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -301,10 +311,10 @@ function VodSection({ event }: any) {
     event.vodStatus === "READY"
       ? "text-green-600"
       : event.vodStatus === "PROCESSING"
-      ? "text-yellow-600"
-      : event.vodStatus === "FAILED"
-      ? "text-red-600"
-      : "text-gray-600";
+        ? "text-yellow-600"
+        : event.vodStatus === "FAILED"
+          ? "text-red-600"
+          : "text-gray-600";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
@@ -460,8 +470,8 @@ function StreamConfig({ event }: any) {
         <InfoField label="Channel State">
           <span
             className={`text-sm font-medium ${event.channelState === "IDLE"
-                ? "text-gray-600"
-                : "text-green-600"
+              ? "text-gray-600"
+              : "text-green-600"
               }`}
           >
             {event.channelState || "N/A"}

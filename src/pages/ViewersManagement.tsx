@@ -230,10 +230,10 @@ export function ViewersManagement() {
                         )}`}
                       >
                         <span className="text-white text-sm">
-                          {getInitials(viewer.name)}
+                          {getInitials(viewer?.formData?.firstName)}
                         </span>
                       </div>
-                      {viewer.name || "Anonymous User"}
+                      {viewer?.formData?.firstName || "Anonymous User"}
                     </td>
 
                     <td className="p-4">

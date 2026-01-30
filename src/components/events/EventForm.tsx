@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { DateTime } from "luxon";
 
+import { toast } from "sonner";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
@@ -96,25 +97,25 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     // }
 
     // CREATE ONLY → LIVE + SCHEDULED
-if (
-  mode === "create" &&
-  (form.eventType === "live" || form.eventType === "scheduled")
-) {
-  payload.startTime = localToUtcISO(form.startTime);
-  payload.endTime = localToUtcISO(form.endTime);
+    if (
+      mode === "create" &&
+      (form.eventType === "live" || form.eventType === "scheduled")
+    ) {
+      payload.startTime = localToUtcISO(form.startTime);
+      payload.endTime = localToUtcISO(form.endTime);
 
-  payload.videoConfig = {
-    resolution: form.videoConfig.resolution,
-    frameRate: form.videoConfig.frameRate,
-    bitrateProfile: form.videoConfig.bitrateProfile,
-  };
-}
+      payload.videoConfig = {
+        resolution: form.videoConfig.resolution,
+        frameRate: form.videoConfig.frameRate,
+        bitrateProfile: form.videoConfig.bitrateProfile,
+      };
+    }
 
-// UPDATE ONLY → SCHEDULED (allow time edits)
-if (mode === "update" && form.eventType === "scheduled") {
-  payload.startTime = localToUtcISO(form.startTime);
-  payload.endTime = localToUtcISO(form.endTime);
-}
+    // UPDATE ONLY → SCHEDULED (allow time edits)
+    if (mode === "update" && form.eventType === "scheduled") {
+      payload.startTime = localToUtcISO(form.startTime);
+      payload.endTime = localToUtcISO(form.endTime);
+    }
 
 
     // VOD ONLY
@@ -161,6 +162,11 @@ if (mode === "update" && form.eventType === "scheduled") {
       onBack();
     } catch (err) {
       console.error("Event submit error:", err);
+      const errorMessage =
+        (err as { data?: { message?: string } })?.data?.message ||
+        "Invalid Data Provided. Please check your inputs.";
+
+      toast.error(errorMessage);
     }
   };
 
@@ -204,8 +210,8 @@ if (mode === "update" && form.eventType === "scheduled") {
 
       {/* Tabs */}
       <EventTabs>
-        <EventDetailsTab mode={mode}/>
-        <VideoConfigTab  mode={mode}/>
+        <EventDetailsTab mode={mode} />
+        <VideoConfigTab mode={mode} />
         <AccessSecurityTab />
       </EventTabs>
 
