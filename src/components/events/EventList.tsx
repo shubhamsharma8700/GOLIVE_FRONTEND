@@ -130,7 +130,7 @@ export default function EventList({
                             ) : event.status === "uploaded" ? (
                               "Completed"
                             ) : (
-                              event.status
+                             event.vodStatus === "READY" ? "VOD READY" : event.status
                             )}
                           </Badge>
                         </td>

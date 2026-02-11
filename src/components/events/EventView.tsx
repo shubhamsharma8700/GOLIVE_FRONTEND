@@ -204,7 +204,7 @@ function Header({ event, onBack, onEmbed }: any) {
 
             <div className="flex items-center gap-1">
               <span className="text-sm font-medium text-gray-600">Status:</span>
-              <StatusBadge status={event.status} />
+              <StatusBadge status={event.vodStatus === "READY" ? "VOD READY" : event.status} />
             </div>
           </div>
 
@@ -252,7 +252,7 @@ function EventQuickInfo({ event }: any) {
         </InfoRow>
 
         <InfoRow label="Status" icon={<Circle size={16} />}>
-          <StatusBadge status={event.status} />
+          <StatusBadge status={event.vodStatus === "READY" ? "VOD READY" : event.status} />
         </InfoRow>
 
         <InfoRow label="Created By" icon={<User size={16} />}>
@@ -431,11 +431,23 @@ function StreamConfig({ event }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
         {/* STREAM URLS */}
         <InfoField label="CloudFront Playback URL" icon={<Link size={16} />}>
-          <CopyText text={event.cloudFrontUrl} />
+          <div style={{
+            wordBreak: "break-all",
+            overflowWrap: "break-word",
+            whiteSpace: "normal"
+          }}>
+            <CopyText text={event.cloudFrontUrl} />
+          </div>
         </InfoField>
 
         <InfoField label="MediaPackage Playback URL" icon={<Network size={16} />}>
-          <CopyText text={event.mediaPackageUrl} />
+          <div style={{
+            wordBreak: "break-all",
+            overflowWrap: "break-word",
+            whiteSpace: "normal"
+          }}>
+            <CopyText text={event.mediaPackageUrl} />
+          </div>
         </InfoField>
 
         <InfoField label="RTMP Input URL" icon={<Server size={16} />}>

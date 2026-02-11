@@ -32,7 +32,7 @@ export default function ForgotPassword() {
       navigate("/new-password", { state: { email } });
 
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to send OTP");
+      toast.error(error?.data?.error || "Failed to send OTP");
     }
   };
 
