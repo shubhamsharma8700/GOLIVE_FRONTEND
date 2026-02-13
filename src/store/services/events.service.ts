@@ -92,6 +92,16 @@ export const eventsApi = adminBaseApi.injectEndpoints({
       invalidatesTags: ["Events"],
     }),
 
+    // ------------------------------------------------------
+    // VOD DOWNLOAD (Presigned URLs for all resolutions)
+    // ------------------------------------------------------
+    getVodDownloadUrl: builder.query<
+      { success: boolean; message?: string; data: { eventId: string; resolutions: Record<string, string> } },
+      string
+    >({
+      query: (eventId) =>
+        `/events/vod/download/${encodeURIComponent(eventId)}`,
+    }),
   }),
 });
 
@@ -102,4 +112,5 @@ export const {
   useCreateEventMutation,
   useUpdateEventMutation,
   useDeleteEventMutation,
+  useLazyGetVodDownloadUrlQuery,
 } = eventsApi;

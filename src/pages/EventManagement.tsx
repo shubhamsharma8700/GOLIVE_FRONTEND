@@ -1,6 +1,7 @@
 // src/features/events/EventManagementPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Search, Plus } from "lucide-react";
 
 import { Input } from "../components/ui/input";
@@ -17,10 +18,21 @@ export type EventViewMode = "list" | "create" | "edit" | "view";
 
 export default function EventManagementPage() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const viewEventIdFromState = (location.state as { viewEventId?: string } | null)?.viewEventId;
 
   const [mode, setMode] = useState<EventViewMode>("list");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (viewEventIdFromState) {
+      setSelectedEventId(viewEventIdFromState);
+      setMode("view");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [viewEventIdFromState, navigate, location.pathname]);
 
   /* ======================================================
      NAVIGATION HELPERS

@@ -16,25 +16,10 @@ import {
 } from "../components/ui/pagination";
 
 import { ViewerDetailsModal } from "../components/ViewerDetailsModal";
-import { useGetViewersQuery } from "../store/services/viewers.service";
+import { useGetViewersQuery, type ApiViewer } from "../store/services/viewers.service";
 
-/* ===================== TYPES ===================== */
-
-export interface Viewer {
-  eventId: string;
-  clientViewerId: string;
-
-  name?: string | null;
-  email?: string | null;
-
-  type: "Paid User" | "Anonymous";
-  watchingHours: number;
-  status: "Active" | "Inactive";
-
-  lastActiveAt: string;
-  device?: string;
-  location?: string;
-}
+/** Re-export for components that expect Viewer by name */
+export type Viewer = ApiViewer;
 
 /* ===================== COMPONENT ===================== */
 
@@ -51,7 +36,7 @@ export function ViewersManagement() {
   const [sortDirection, setSortDirection] =
     useState<"asc" | "desc">("asc");
 
-  const [selectedViewer, setSelectedViewer] = useState<Viewer | null>(null);
+  const [selectedViewer, setSelectedViewer] = useState<ApiViewer | null>(null);
   const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
 
   /* ================= API ================= */
@@ -64,25 +49,31 @@ export function ViewersManagement() {
 
   /* ================= SORTING ================= */
 
+  const getRowDisplayName = (a: ApiViewer) => {
+    if (a.name && String(a.name).trim()) return a.name.trim();
+    const first = a.formData?.firstName?.trim();
+    const last = a.formData?.lastName?.trim();
+    if (first || last) return [first, last].filter(Boolean).join(" ") || "Anonymous User";
+    return "Anonymous User";
+  };
+
   const viewers = useMemo(() => {
     if (!data?.items) return [];
 
-    const list = [...data.items];
+    const list = [...(data.items as ApiViewer[])];
 
     if (!sortColumn) return list;
 
     return list.sort((a, b) => {
       if (sortColumn === "name") {
-        const aName = (a.name || "").toLowerCase();
-        const bName = (b.name || "").toLowerCase();
+        const aName = getRowDisplayName(a).toLowerCase();
+        const bName = getRowDisplayName(b).toLowerCase();
         return sortDirection === "asc"
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-
-      const aVal = a.watchingHours ?? 0;
-      const bVal = b.watchingHours ?? 0;
-
+      const aVal = a.totalWatchTime ?? 0;
+      const bVal = b.totalWatchTime ?? 0;
       return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
     });
   }, [data, sortColumn, sortDirection]);
@@ -98,14 +89,14 @@ export function ViewersManagement() {
 
   /* ================= HELPERS ================= */
 
-  const openViewerModal = (viewer: Viewer) => {
+  const openViewerModal = (viewer: ApiViewer) => {
     setSelectedViewer(viewer);
     setIsViewerModalOpen(true);
   };
 
-  const getInitials = (name?: string | null) => {
-    if (!name || name.trim().length === 0) return "A";
-
+  const getInitials = (v: ApiViewer) => {
+    const name = getRowDisplayName(v);
+    if (name === "Anonymous User") return "A";
     return name
       .split(" ")
       .filter(Boolean)
@@ -115,8 +106,8 @@ export function ViewersManagement() {
       .toUpperCase();
   };
 
-  const getAvatarColor = (type: Viewer["type"]) =>
-    type === "Paid User"
+  const getAvatarColor = (isPaid?: boolean) =>
+    isPaid
       ? "bg-gradient-to-br from-[#B89B5E] to-[#8B7547]"
       : "bg-gradient-to-br from-gray-500 to-gray-600";
 
@@ -216,7 +207,13 @@ export function ViewersManagement() {
             </thead>
 
             <tbody>
-              {!isLoading &&
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-gray-500">
+                    Loading viewers…
+                  </td>
+                </tr>
+              ) : (
                 viewers.map((viewer) => (
                   <tr
                     key={`${viewer.eventId}-${viewer.clientViewerId}`}
@@ -226,44 +223,49 @@ export function ViewersManagement() {
                     <td className="p-4 flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center ${getAvatarColor(
-                          viewer.type
+                          viewer.isPaidViewer
                         )}`}
                       >
                         <span className="text-white text-sm">
-                          {getInitials(viewer?.formData?.firstName)}
+                          {getInitials(viewer)}
                         </span>
                       </div>
-                      {viewer?.formData?.firstName || "Anonymous User"}
+                      {getRowDisplayName(viewer)}
                     </td>
 
                     <td className="p-4">
-                      {viewer.email || "N/A"}
+                      {viewer.email ?? viewer.formData?.email ?? "—"}
                     </td>
 
                     <td className="p-4">
-                      <Badge>{viewer?.event?.accessMode}</Badge>
+                      <Badge>{viewer?.event?.accessMode ?? "—"}</Badge>
                     </td>
 
                     <td className="p-4">
-                       {formatDuration(viewer.totalWatchTime ?? 0)}
+                      {formatDuration(viewer.totalWatchTime ?? 0)}
                     </td>
 
-                    <td className="p-4">{viewer?.event?.eventType || "N/A"}</td>
+                    <td className="p-4">{viewer?.event?.eventType ?? "—"}</td>
 
                     <td className="p-4">
                       {viewer.lastActiveAt
                         ? new Date(viewer.lastActiveAt).toLocaleString()
-                        : "-"}
+                        : "—"}
                     </td>
 
-                    <td className="p-4">
-                      <Button size="sm" className="bg-[#B89B5E] text-white">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        className="bg-[#B89B5E] text-white hover:bg-[#A28452]"
+                        onClick={() => openViewerModal(viewer)}
+                      >
                         <Eye className="w-4 h-4 mr-1" />
                         View
                       </Button>
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
 
@@ -327,7 +329,7 @@ export function ViewersManagement() {
       <ViewerDetailsModal
         open={isViewerModalOpen}
         onOpenChange={setIsViewerModalOpen}
-        viewer={selectedViewer}
+        viewer={selectedViewer ? { clientViewerId: selectedViewer.clientViewerId } : null}
       />
     </div>
   );

@@ -148,6 +148,13 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
   ====================================================== */
   const handleSubmit = async () => {
     try {
+      if (mode === "create" && form.eventType === "vod") {
+        if (!form.s3Key) {
+          toast.error("Please upload a video before publishing the event.");
+          return;
+        }
+      }
+
       const payload = buildPayload();
 
       if (mode === "create") {
@@ -230,6 +237,16 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
         <Button
           className="bg-[#B89B5E] text-white hover:bg-[#A28452]"
           onClick={handleSubmit}
+          disabled={
+            mode === "create" &&
+            form.eventType === "vod" &&
+            !form.s3Key
+          }
+          title={
+            mode === "create" && form.eventType === "vod" && !form.s3Key
+              ? "Upload a video first to publish"
+              : undefined
+          }
         >
           {mode === "create" ? "Publish Event" : "Publish Changes"}
         </Button>

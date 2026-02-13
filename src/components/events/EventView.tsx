@@ -5,6 +5,7 @@ import { useAppSelector } from "../../hooks/useAppSelector";
 import { DateTime } from "luxon";
 
 import EmbedPlayerModal from "./EmbedPlayerModal";
+import VodDownloadModal from "./VodDownloadModal";
 
 import { loadEvent, setWatchingState } from "../../store/slices/eventViewSlice";
 
@@ -31,6 +32,7 @@ import {
   Network,
   PlayCircle,
   Radio,
+  Download,
 } from "lucide-react";
 
 interface EventViewProps {
@@ -47,6 +49,7 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
   const playerRef = useRef<Player | null>(null);
 
   const [showEmbed, setShowEmbed] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
 
   /* ------------------------------------------------------
      LOAD EVENT INTO REDUX
@@ -136,6 +139,7 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
         event={event}
         onBack={onBack}
         onEmbed={() => setShowEmbed(true)}
+        onDownload={() => setShowDownload(true)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -158,6 +162,13 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
         onClose={() => setShowEmbed(false)}
         eventId={event.eventId || ""}
       />
+
+      {/* VOD DOWNLOAD MODAL */}
+      <VodDownloadModal
+        open={showDownload}
+        onClose={() => setShowDownload(false)}
+        eventId={event.eventId || ""}
+      />
     </div>
   );
 }
@@ -166,7 +177,9 @@ export default function EventView({ eventId, onBack }: EventViewProps) {
    HEADER
 ------------------------------------------------------ */
 
-function Header({ event, onBack, onEmbed }: any) {
+function Header({ event, onBack, onEmbed, onDownload }: any) {
+  const showVodDownload = event.vodStatus === "READY";
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div className="flex items-center justify-between">
@@ -188,6 +201,15 @@ function Header({ event, onBack, onEmbed }: any) {
         </div>
 
         <div className="flex items-center gap-3">
+          {showVodDownload && (
+            <button
+              onClick={onDownload}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#B89B5E] border border-[#B89B5E]/50 rounded-lg hover:bg-[#B89B5E]/10"
+            >
+              <Download size={14} />
+              Download VOD
+            </button>
+          )}
           <button
             onClick={onEmbed}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
@@ -420,61 +442,55 @@ function VodSection({ event }: any) {
 
 function StreamConfig({ event }: any) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-hidden">
       <div className="flex items-center gap-2 mb-5">
-        <Radio size={20} className="text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">
+        <Radio size={20} className="text-blue-600 shrink-0" />
+        <h3 className="text-lg font-semibold text-gray-900 min-w-0">
           Live Streaming Configuration
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 min-w-0">
         {/* STREAM URLS */}
-        <InfoField label="CloudFront Playback URL" icon={<Link size={16} />}>
-          <div style={{
-            wordBreak: "break-all",
-            overflowWrap: "break-word",
-            whiteSpace: "normal"
-          }}>
+        <InfoField label="CloudFront Playback URL" icon={<Link size={16} />} className="min-w-0">
+          <div className="min-w-0 break-all overflow-hidden">
             <CopyText text={event.cloudFrontUrl} />
           </div>
         </InfoField>
 
-        <InfoField label="MediaPackage Playback URL" icon={<Network size={16} />}>
-          <div style={{
-            wordBreak: "break-all",
-            overflowWrap: "break-word",
-            whiteSpace: "normal"
-          }}>
+        <InfoField label="MediaPackage Playback URL" icon={<Network size={16} />} className="min-w-0">
+          <div className="min-w-0 break-all overflow-hidden">
             <CopyText text={event.mediaPackageUrl} />
           </div>
         </InfoField>
 
-        <InfoField label="RTMP Input URL" icon={<Server size={16} />}>
-          <CopyText text={event.rtmpInputUrl} />
+        <InfoField label="RTMP Input URL" icon={<Server size={16} />} className="min-w-0">
+          <div className="min-w-0 break-all">
+            <CopyText text={event.rtmpInputUrl} />
+          </div>
         </InfoField>
 
-        <InfoField label="CloudFront Domain">
-          <span className="text-sm text-gray-900">
+        <InfoField label="CloudFront Domain" className="min-w-0">
+          <span className="text-sm text-gray-900 break-all">
             {event.cloudFrontDomain || "N/A"}
           </span>
         </InfoField>
 
         {/* AWS MEDIALIVE */}
-        <InfoField label="MediaLive Channel ID">
-          <span className="text-sm text-gray-900 font-mono">
+        <InfoField label="MediaLive Channel ID" className="min-w-0">
+          <span className="text-sm text-gray-900 font-mono break-all">
             {event.mediaLiveChannelId || "N/A"}
           </span>
         </InfoField>
 
-        <InfoField label="MediaLive Input ID">
-          <span className="text-sm text-gray-900 font-mono">
+        <InfoField label="MediaLive Input ID" className="min-w-0">
+          <span className="text-sm text-gray-900 font-mono break-all">
             {event.mediaLiveInputId || "N/A"}
           </span>
         </InfoField>
 
-        <InfoField label="MediaLive Security Group ID">
-          <span className="text-sm text-gray-900 font-mono">
+        <InfoField label="MediaLive Security Group ID" className="min-w-0">
+          <span className="text-sm text-gray-900 font-mono break-all">
             {event.mediaLiveInputSecurityGroupId || "N/A"}
           </span>
         </InfoField>
@@ -556,9 +572,9 @@ function InfoRow({ label, icon, children }: any) {
   );
 }
 
-function InfoField({ label, icon, children }: any) {
+function InfoField({ label, icon, children, className }: any) {
   return (
-    <div>
+    <div className={className}>
       <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5 mb-2">
         {icon}
         {label}

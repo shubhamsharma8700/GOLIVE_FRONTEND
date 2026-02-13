@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   useListEventsQuery,
   useDeleteEventMutation,
@@ -11,6 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import {
   Eye,
   Edit,
@@ -30,20 +40,32 @@ export default function EventList({
   onView: (id: string) => void;
   searchQuery?: string;
 }) {
-  // Fetch events (search from parent)
-  const { data, isLoading } = useListEventsQuery({ q: searchQuery });
-  const [deleteEvent] = useDeleteEventMutation();
+  const [deleteTarget, setDeleteTarget] = useState<{ eventId: string; title: string } | null>(null);
+
+  const { data, isLoading, refetch } = useListEventsQuery({ q: searchQuery });
+  const [deleteEvent, { isLoading: isDeleting }] = useDeleteEventMutation();
 
   const events = data?.events || [];
 
-  const handleDelete = async (eventId: string) => {
+  const handleDeleteClick = (eventId: string, title: string) => {
+    setDeleteTarget({ eventId, title });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteEvent(eventId).unwrap();
-      toast.success("Event deletion initiated successfully");
+      await deleteEvent(deleteTarget.eventId).unwrap();
+      setDeleteTarget(null);
+      await refetch();
+      toast.success("Event deleted successfully");
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete event");
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null);
   };
 
   return (
@@ -166,10 +188,10 @@ export default function EventList({
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleDelete(event.eventId)}
-                            disabled={event.isDeletionInProgress}
+                            onClick={() => handleDeleteClick(event.eventId, event.title)}
+                            disabled={isDeleting}
                           >
-                            <Trash2 className="w-4 h-4 mr-1" /> {event.isDeletionInProgress?"Deleting...":"Delete"}
+                            <Trash2 className="w-4 h-4 mr-1" /> {isDeleting ? "Deleting..." : "Delete"}
                           </Button>
                         </td>
                       </tr>
@@ -181,6 +203,30 @@ export default function EventList({
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &quot;{deleteTarget?.title ?? "this event"}&quot;. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteConfirm();
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
