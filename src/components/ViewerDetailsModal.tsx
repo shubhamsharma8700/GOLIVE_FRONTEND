@@ -135,9 +135,9 @@ export function ViewerDetailsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-1">
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
               <div className="grid grid-cols-2 gap-4">
                 <div className="h-24 bg-gray-100 rounded-lg animate-pulse" />
@@ -154,7 +154,7 @@ export function ViewerDetailsModal({
           ) : (
             <>
               {/* PROFILE */}
-              <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex items-start gap-2 flex-wrap">
                 <div
                   className={`w-16 h-16 rounded-full flex items-center justify-center text-xl shrink-0 ${getAvatarColor(aggregated.isPaidViewer)}`}
                 >
@@ -192,7 +192,7 @@ export function ViewerDetailsModal({
               </div>
 
               {/* STATS — variable names match API: totalWatchTime, lastActiveAt, totalSessions, createdAt */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-sm text-gray-600 mb-1">Watch Time</p>
                   <p className="text-xl font-semibold text-[#B89B5E]">
@@ -238,7 +238,7 @@ export function ViewerDetailsModal({
               )}
 
               {/* DEVICE & LOCATION — from API device and network.geo */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2 ">
                   <User className="w-4 h-4" />
                   Device &amp; Location

@@ -185,7 +185,7 @@ export default function EventDetailsTab({ mode }: Props) {
 
       {/* LIVE */}
       {form.eventType === "live" && (
-        <div className="grid grid-cols-2 gap-6 mt-4">
+        <div className="grid grid-cols-2 gap-6 mt-8">
           <div className="space-y-4">
             <Label>Live Start Time (Local)</Label>
             <Input
