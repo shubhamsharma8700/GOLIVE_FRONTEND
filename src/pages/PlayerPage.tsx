@@ -92,6 +92,7 @@ export default function PlayerPage() {
   const [viewerToken, setViewerToken] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [paidAccessPasswordDone, setPaidAccessPasswordDone] = useState(false);
 
   /* ================= ACCESS CONFIG ================= */
 
@@ -395,22 +396,37 @@ export default function PlayerPage() {
   }
 
   if (!hasAccess && accessMode === "paidAccess") {
-    overlay = !viewerToken ? (
-      <EmailOverlay
-        open
-        fields={accessConfig?.registrationFields || []}
-        eventId={eventId}
-        onAccessGranted={handleRegister}
-      />
-    ) : (
-      <PaymentOverlay
-        open
-        eventId={eventId}
-        amount={accessConfig?.payment?.amount}
-        currency={accessConfig?.payment?.currency}
-        onPay={handlePayment}
-      />
-    );
+    if (!viewerToken) {
+      overlay = (
+        <EmailOverlay
+          open
+          fields={accessConfig?.registrationFields || []}
+          eventId={eventId}
+          onAccessGranted={handleRegister}
+        />
+      );
+    } else if (!paidAccessPasswordDone) {
+      overlay = (
+        <PasswordOverlay
+          open
+          eventId={eventId}
+          onSubmit={async (password: string) => {
+            await handlePasswordVerify(password);
+            setPaidAccessPasswordDone(true);
+          }}
+        />
+      );
+    } else {
+      overlay = (
+        <PaymentOverlay
+          open
+          eventId={eventId}
+          amount={accessConfig?.payment?.amount}
+          currency={accessConfig?.payment?.currency}
+          onPay={handlePayment}
+        />
+      );
+    }
   }
 
   /* ================= RENDER ================= */

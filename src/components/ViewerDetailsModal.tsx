@@ -10,6 +10,7 @@ import {
 import { MapPin, Monitor, User, Mail, Calendar, Globe } from "lucide-react";
 import { useGetViewerByIdQuery } from "../store/services/viewers.service";
 import type { ApiViewer } from "../store/services/viewers.service";
+import { formatDateTime12h } from "../utils/formatDateTime";
 
 interface Props {
   open: boolean;
@@ -202,9 +203,7 @@ export function ViewerDetailsModal({
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-sm text-gray-600 mb-1">Last Active</p>
                   <p className="text-sm text-gray-900">
-                    {aggregated.lastActiveAt
-                      ? new Date(aggregated.lastActiveAt).toLocaleString()
-                      : "—"}
+                    {formatDateTime12h(aggregated.lastActiveAt)}
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -217,7 +216,7 @@ export function ViewerDetailsModal({
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-sm text-gray-600 mb-1">First Seen</p>
                     <p className="text-sm text-gray-900">
-                      {new Date(aggregated.firstSeenAt).toLocaleString()}
+                      {formatDateTime12h(aggregated.firstSeenAt)}
                     </p>
                   </div>
                 )}

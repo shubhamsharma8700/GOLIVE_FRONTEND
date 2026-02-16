@@ -28,6 +28,7 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateTime12h } from "../../utils/formatDateTime";
 
 export default function EventList({
   // onCreate,
@@ -159,9 +160,7 @@ export default function EventList({
 
                         {/* -------- Created At -------- */}
                         <td className="p-4 text-gray-700">
-                          {event.createdAt
-                            ? new Date(event.createdAt).toLocaleString()
-                            : "--"}
+                          {formatDateTime12h(event.createdAt) || "--"}
                         </td>
 
                         {/* -------- Actions -------- */}

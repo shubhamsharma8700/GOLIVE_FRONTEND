@@ -1,8 +1,13 @@
 import { adminBaseApi } from "./adminBaseApi";
 
+export interface ViewersPaginationKey {
+  lastEventId?: string;
+  lastClientViewerId?: string;
+}
+
 export interface ViewersQueryParams {
   limit?: number;
-  lastKey?: string | null | Record<string, unknown>;
+  lastKey?: string | null | ViewersPaginationKey;
   q?: string;
 }
 
@@ -69,16 +74,25 @@ export const viewersApi = adminBaseApi.injectEndpoints({
         items: any[];
         pagination: {
           limit: number;
-          nextKey: string | null;
+          nextKey: ViewersPaginationKey | null;
           hasMore: boolean;
         };
       },
       ViewersQueryParams | void
     >({
-      query: (params) => ({
-        url: "/viewers",
-        ...(params && { params }),
-      }),
+      query: (params) => {
+        if (!params) return { url: "/viewers" };
+        const { lastKey, ...rest } = params;
+        const queryParams: Record<string, string | number> = { ...rest } as Record<string, string | number>;
+        if (lastKey != null) {
+          if (typeof lastKey === "object" && lastKey !== null) {
+            queryParams.lastKey = JSON.stringify(lastKey);
+          } else if (typeof lastKey === "string") {
+            queryParams.lastKey = lastKey;
+          }
+        }
+        return { url: "/viewers", params: queryParams };
+      },
       providesTags: ["Viewers"],
     }),
 

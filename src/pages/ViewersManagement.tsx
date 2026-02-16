@@ -16,7 +16,12 @@ import {
 } from "../components/ui/pagination";
 
 import { ViewerDetailsModal } from "../components/ViewerDetailsModal";
-import { useGetViewersQuery, type ApiViewer } from "../store/services/viewers.service";
+import {
+  useGetViewersQuery,
+  type ApiViewer,
+  type ViewersPaginationKey,
+} from "../store/services/viewers.service";
+import { formatDateTime12h } from "../utils/formatDateTime";
 
 /** Re-export for components that expect Viewer by name */
 export type Viewer = ApiViewer;
@@ -28,7 +33,9 @@ export function ViewersManagement() {
   const [limit] = useState(10);
 
   // DynamoDB cursor stack (back/forward)
-  const [cursorStack, setCursorStack] = useState<(string | null)[]>([null]);
+  const [cursorStack, setCursorStack] = useState<
+    (string | ViewersPaginationKey | null)[]
+  >([null]);
   const currentCursor = cursorStack[cursorStack.length - 1];
 
   const [sortColumn, setSortColumn] =
@@ -248,9 +255,7 @@ export function ViewersManagement() {
                     <td className="p-4">{viewer?.event?.eventType ?? "—"}</td>
 
                     <td className="p-4">
-                      {viewer.lastActiveAt
-                        ? new Date(viewer.lastActiveAt).toLocaleString()
-                        : "—"}
+                      {formatDateTime12h(viewer.lastActiveAt)}
                     </td>
 
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>

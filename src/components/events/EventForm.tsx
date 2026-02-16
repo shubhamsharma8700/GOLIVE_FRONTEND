@@ -155,6 +155,28 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
         }
       }
 
+      if (form.accessMode === "passwordAccess") {
+        if (!form.accessPassword?.trim()) {
+          toast.error("Please set an event password before publishing.");
+          return;
+        }
+      }
+
+      if (form.accessMode === "paidAccess") {
+        if (!form.accessPassword?.trim()) {
+          toast.error("Please set an event password before publishing.");
+          return;
+        }
+        if (form.paymentAmount == null || form.paymentAmount <= 0) {
+          toast.error("Please enter a valid payment amount.");
+          return;
+        }
+        if (!form.currency?.trim()) {
+          toast.error("Please select a currency.");
+          return;
+        }
+      }
+
       const payload = buildPayload();
 
       if (mode === "create") {
@@ -238,14 +260,26 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
           className="bg-[#B89B5E] text-white hover:bg-[#A28452]"
           onClick={handleSubmit}
           disabled={
-            mode === "create" &&
-            form.eventType === "vod" &&
-            !form.s3Key
+            (mode === "create" && form.eventType === "vod" && !form.s3Key) ||
+            (form.accessMode === "passwordAccess" && !form.accessPassword?.trim()) ||
+            (form.accessMode === "paidAccess" &&
+              (!form.accessPassword?.trim() ||
+                form.paymentAmount == null ||
+                form.paymentAmount <= 0 ||
+                !form.currency?.trim()))
           }
           title={
             mode === "create" && form.eventType === "vod" && !form.s3Key
               ? "Upload a video first to publish"
-              : undefined
+              : form.accessMode === "passwordAccess" && !form.accessPassword?.trim()
+                ? "Set event password to publish"
+                : form.accessMode === "paidAccess" &&
+                    (!form.accessPassword?.trim() ||
+                      !form.currency?.trim() ||
+                      form.paymentAmount == null ||
+                      form.paymentAmount <= 0)
+                  ? "Complete password, amount and currency to publish"
+                  : undefined
           }
         >
           {mode === "create" ? "Publish Event" : "Publish Changes"}
