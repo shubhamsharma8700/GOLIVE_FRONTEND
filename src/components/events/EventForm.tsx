@@ -136,6 +136,8 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
 
     if (form.accessMode === "paidAccess") {
+      payload.registrationFields = form.registrationFields;
+      payload.accessPassword = form.accessPassword;
       payload.paymentAmount = form.paymentAmount;
       payload.currency = form.currency;
     }

@@ -178,7 +178,9 @@ export default function PlayerPage() {
       password,
     }).unwrap();
 
+    if (accessMode === "passwordAccess") {
     setHasAccess(true);
+  }
   };
 
   /* ================= PAYMENT ================= */
