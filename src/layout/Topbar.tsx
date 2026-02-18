@@ -1,13 +1,13 @@
-import { useState } from "react";
+// import { useState } from "react";
 import {
-  Bell,
-  HelpCircle,
+  // Bell,
+  // HelpCircle,
   LogOut,
   ChevronDown
 } from "lucide-react";
 
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+// import { Button } from "../components/ui/button";
+// import { Badge } from "../components/ui/badge";
 
 import {
   DropdownMenu,
@@ -33,7 +33,7 @@ export default function Topbar({}: TopbarProps) {
 
   const [logoutApi] = useLogoutMutation();
 
-  const [notificationCount] = useState(1);
+  // const [notificationCount] = useState(1);
 
   const initials =
     user?.name
@@ -57,7 +57,7 @@ export default function Topbar({}: TopbarProps) {
       <div />
       
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#B89B5E] hover:bg-gray-900">
+        {/* <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#B89B5E] hover:bg-gray-900">
           <HelpCircle className="w-5 h-5" />
         </Button>
         <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-[#B89B5E] hover:bg-gray-900">
@@ -69,7 +69,7 @@ export default function Topbar({}: TopbarProps) {
           )}
         </Button>
 
-        <div className="w-px h-6 bg-gray-700 mx-1" />
+        <div className="w-px h-6 bg-gray-700 mx-1" /> */}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -30,7 +30,10 @@ import {
 } from "../store/services/analytics.service";
 
 // Payment API
-import { useCreatePaymentSessionMutation,useCheckPaymentStatusQuery } from "../store/services/payments.service";
+import {
+  useCreatePaymentSessionMutation,
+  useLazyCheckPaymentStatusQuery,
+} from "../store/services/payments.service";
 
 // Overlays
 import EmailOverlay from "../components/player/EmailOverlay";
@@ -77,6 +80,20 @@ function clearViewerToken(eventId: string) {
   localStorage.removeItem(`viewerToken:${eventId}`);
 }
 
+function getPaidAccessPasswordDone(eventId: string) {
+  if (!eventId) return false;
+  return localStorage.getItem(`paidAccessPasswordDone:${eventId}`) === "1";
+}
+
+function setPaidAccessPasswordDoneState(eventId: string, done: boolean) {
+  if (!eventId) return;
+  if (done) {
+    localStorage.setItem(`paidAccessPasswordDone:${eventId}`, "1");
+    return;
+  }
+  localStorage.removeItem(`paidAccessPasswordDone:${eventId}`);
+}
+
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? "";
@@ -88,11 +105,12 @@ export default function PlayerPage() {
   const sessionIdRef = useRef<string | null>(null);
   const isPlayingRef = useRef(false);
 
-  const clientViewerId = useMemo(getClientViewerId, []);
+  const clientViewerId = useMemo(() => getClientViewerId(), []);
   const [viewerToken, setViewerToken] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [paidAccessPasswordDone, setPaidAccessPasswordDone] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
 
   /* ================= ACCESS CONFIG ================= */
 
@@ -137,8 +155,10 @@ export default function PlayerPage() {
 
     if (isValidateError) {
       clearViewerToken(eventId);
+      setPaidAccessPasswordDoneState(eventId, false);
       setViewerToken(null);
       setHasAccess(false);
+      setPaidAccessPasswordDone(false);
       setValidationAttempted(true);
     }
   }, [
@@ -154,7 +174,7 @@ export default function PlayerPage() {
 
   const [registerViewer] = useRegisterViewerMutation();
 
-  const handleRegister = async (formData?: any) => {
+  const handleRegister = async (formData?: Record<string, string>) => {
     const res = await registerViewer({
       eventId,
       clientViewerId,
@@ -164,6 +184,8 @@ export default function PlayerPage() {
 
     setViewerToken(res.viewerToken);
     storeViewerToken(eventId, res.viewerToken);
+    setPaidAccessPasswordDone(false);
+    setPaidAccessPasswordDoneState(eventId, false);
     setHasAccess(Boolean(res.accessVerified));
   };
 
@@ -179,33 +201,76 @@ export default function PlayerPage() {
     }).unwrap();
 
     if (accessMode === "passwordAccess") {
-    setHasAccess(true);
-  }
+      setHasAccess(true);
+      return;
+    }
+
+    if (accessMode === "paidAccess") {
+      setPaidAccessPasswordDone(true);
+      setPaidAccessPasswordDoneState(eventId, true);
+    }
   };
 
   /* ================= PAYMENT ================= */
 
   const [searchParams] = useSearchParams();
   const paymentStatus = searchParams.get("payment");
+  const stripeSessionId = searchParams.get("session_id");
+  const shouldVerifyPayment =
+    accessMode === "paidAccess" &&
+    !hasAccess &&
+    (paymentStatus === "success" || Boolean(stripeSessionId));
 
-  const { data: paymentStatusData } = useCheckPaymentStatusQuery(
-    { eventId, viewerToken: viewerToken! },
-    {
-      skip:
-        paymentStatus !== "success" ||
-        !viewerToken ||
-        accessMode !== "paidAccess",
-    }
-  );
+  const [checkPaymentStatus] = useLazyCheckPaymentStatusQuery();
 
   useEffect(() => {
-    if (
-      paymentStatus === "success" &&
-      paymentStatusData?.payment?.status === "succeeded"
-    ) {
-      setHasAccess(true);
-    }
-  }, [paymentStatus, paymentStatusData]);
+    let cancelled = false;
+
+    const verifyPaymentWithRetry = async () => {
+      if (!shouldVerifyPayment || !viewerToken) return;
+
+      setIsVerifyingPayment(true);
+
+      const waitMs = [0, 1500, 3000, 5000];
+
+      for (let i = 0; i < waitMs.length; i += 1) {
+        if (waitMs[i] > 0) {
+          await new Promise((resolve) => setTimeout(resolve, waitMs[i]));
+        }
+        if (cancelled) return;
+
+        try {
+          const res = await checkPaymentStatus({ eventId, viewerToken }).unwrap();
+          const status = res?.payment?.status;
+
+          if (status === "succeeded") {
+            if (!cancelled) {
+              setHasAccess(true);
+            }
+            return;
+          }
+
+          if (status && status !== "pending") {
+            return;
+          }
+        } catch {
+          if (i === waitMs.length - 1) {
+            return;
+          }
+        }
+      }
+    };
+
+    verifyPaymentWithRetry().finally(() => {
+      if (!cancelled) {
+        setIsVerifyingPayment(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldVerifyPayment, viewerToken, eventId, checkPaymentStatus]);
 
   const [createPaymentSession] = useCreatePaymentSessionMutation();
 
@@ -277,9 +342,11 @@ export default function PlayerPage() {
     });
 
     player.ready(() => {
-      const anyPlayer = player as any;
-      if (typeof anyPlayer.hlsQualitySelector === "function") {
-        anyPlayer.hlsQualitySelector({ displayCurrentQuality: true });
+      const qualityPlayer = player as Player & {
+        hlsQualitySelector?: (opts: { displayCurrentQuality: boolean }) => void;
+      };
+      if (typeof qualityPlayer.hlsQualitySelector === "function") {
+        qualityPlayer.hlsQualitySelector({ displayCurrentQuality: true });
       }
     });
 
@@ -369,6 +436,10 @@ export default function PlayerPage() {
     }
   }, [accessMode, eventId, viewerToken, validationAttempted]);
 
+  useEffect(() => {
+    setPaidAccessPasswordDone(getPaidAccessPasswordDone(eventId));
+  }, [eventId]);
+
   /* ================= OVERLAYS ================= */
 
   let overlay: React.ReactNode = null;
@@ -407,15 +478,18 @@ export default function PlayerPage() {
           onAccessGranted={handleRegister}
         />
       );
+    } else if (shouldVerifyPayment || isVerifyingPayment) {
+      overlay = (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-white">
+          Verifying payment...
+        </div>
+      );
     } else if (!paidAccessPasswordDone) {
       overlay = (
         <PasswordOverlay
           open
           eventId={eventId}
-          onSubmit={async (password: string) => {
-            await handlePasswordVerify(password);
-            setPaidAccessPasswordDone(true);
-          }}
+          onSubmit={handlePasswordVerify}
         />
       );
     } else {

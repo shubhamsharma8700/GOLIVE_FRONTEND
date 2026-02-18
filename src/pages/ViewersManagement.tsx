@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { Search, ArrowUpDown, Eye } from "lucide-react";
 
 import { Badge } from "../components/ui/badge";
@@ -85,6 +85,11 @@ export function ViewersManagement() {
     });
   }, [data, sortColumn, sortDirection]);
 
+  const totalViewers =
+    data?.totalItems ?? data?.pagination?.totalItems ?? viewers.length;
+  const nextCursor =
+    data?.pagination?.nextToken ?? data?.pagination?.nextKey ?? null;
+
   const handleSort = (column: "name" | "watchingHours") => {
     if (sortColumn === column) {
       setSortDirection((p) => (p === "asc" ? "desc" : "asc"));
@@ -117,6 +122,21 @@ export function ViewersManagement() {
     isPaid
       ? "bg-gradient-to-br from-[#B89B5E] to-[#8B7547]"
       : "bg-gradient-to-br from-gray-500 to-gray-600";
+
+  const getViewerTypeBadgeColor = (type?: string) => {
+    switch ((type ?? "").trim()) {
+      case "freeAccess":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+      case "emailAccess":
+        return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100";
+      case "passwordAccess":
+        return "bg-amber-100 text-amber-800 hover:bg-amber-100";
+      case "paidAccess":
+        return "bg-rose-100 text-rose-800 hover:bg-rose-100";
+      default:
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+    }
+  };
 
 
   const formatDuration = (totalSeconds = 0) => {
@@ -170,7 +190,7 @@ export function ViewersManagement() {
       {/* TABLE */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle>All Viewers</CardTitle>
+          <CardTitle>All Viewers ({totalViewers})</CardTitle>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -217,7 +237,7 @@ export function ViewersManagement() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-gray-500">
-                    Loading viewers…
+                    Loading viewersâ€¦
                   </td>
                 </tr>
               ) : (
@@ -241,18 +261,18 @@ export function ViewersManagement() {
                     </td>
 
                     <td className="p-4">
-                      {viewer.email ?? viewer.formData?.email ?? "—"}
+                      {viewer.email ?? viewer.formData?.email ?? "â€”"}
                     </td>
 
                     <td className="p-4">
-                      <Badge>{viewer?.event?.accessMode ?? "—"}</Badge>
+                      <Badge className={getViewerTypeBadgeColor(viewer?.event?.accessMode)}>{viewer?.event?.accessMode ?? "—"}</Badge>
                     </td>
 
                     <td className="p-4">
                       {formatDuration(viewer.totalWatchTime ?? 0)}
                     </td>
 
-                    <td className="p-4">{viewer?.event?.eventType ?? "—"}</td>
+                    <td className="p-4">{viewer?.event?.eventType ?? "â€”"}</td>
 
                     <td className="p-4">
                       {formatDateTime12h(viewer.lastActiveAt)}
@@ -309,15 +329,15 @@ export function ViewersManagement() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (data?.pagination?.nextKey) {
+                      if (nextCursor) {
                         setCursorStack((prev) => [
                           ...prev,
-                          data.pagination.nextKey,
+                          nextCursor,
                         ]);
                       }
                     }}
                     className={
-                      !data?.pagination?.hasMore
+                      !data?.pagination?.hasMore || !nextCursor
                         ? "pointer-events-none opacity-50"
                         : ""
                     }
@@ -339,3 +359,5 @@ export function ViewersManagement() {
     </div>
   );
 }
+
+

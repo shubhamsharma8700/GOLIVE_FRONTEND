@@ -7,8 +7,24 @@ export interface ViewersPaginationKey {
 
 export interface ViewersQueryParams {
   limit?: number;
+  nextToken?: string | null;
   lastKey?: string | null | ViewersPaginationKey;
   q?: string;
+}
+
+export interface ViewersListPagination {
+  limit: number;
+  totalItems?: number;
+  nextKey: ViewersPaginationKey | null;
+  nextToken?: string | null;
+  hasMore: boolean;
+}
+
+export interface ViewersListResponse {
+  totalItems?: number;
+  count?: number;
+  items: ApiViewer[];
+  pagination: ViewersListPagination;
 }
 
 /** Viewer item as returned by list and getById APIs */
@@ -69,22 +85,15 @@ export const viewersApi = adminBaseApi.injectEndpoints({
        1. LIST ALL VIEWERS (ADMIN)
        GET /api/viewers
     ===================================================== */
-    getViewers: builder.query<
-      {
-        items: any[];
-        pagination: {
-          limit: number;
-          nextKey: ViewersPaginationKey | null;
-          hasMore: boolean;
-        };
-      },
-      ViewersQueryParams | void
-    >({
+    getViewers: builder.query<ViewersListResponse, ViewersQueryParams | void>({
       query: (params) => {
         if (!params) return { url: "/viewers" };
-        const { lastKey, ...rest } = params;
+        const { lastKey, nextToken, ...rest } = params;
         const queryParams: Record<string, string | number> = { ...rest } as Record<string, string | number>;
-        if (lastKey != null) {
+        // New API returns nextToken; backend still accepts lastKey for paging cursor.
+        if (nextToken) {
+          queryParams.lastKey = nextToken;
+        } else if (lastKey != null) {
           if (typeof lastKey === "object" && lastKey !== null) {
             queryParams.lastKey = JSON.stringify(lastKey);
           } else if (typeof lastKey === "string") {

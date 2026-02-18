@@ -4,8 +4,7 @@ import { Input } from '../components/ui/input';
 import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, Search, UserPlus, DollarSign } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ImageWithFallback } from '../components/common/ImageWithFallback';
-import { useGetDashboardAnalyticsQuery } from '../store/services/dashboard.service';
-import { useListEventsQuery } from '../store/services/events.service';
+import { useGetDashboardAnalyticsQuery, type DashboardEventItem } from '../store/services/dashboard.service';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Calendar,
@@ -16,11 +15,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
 };
 
 function getDuration(startTime?: string | null, endTime?: string | null): string {
-  if (!startTime || !endTime) return "—";
+  if (!startTime || !endTime) return "-";
   const start = new Date(startTime).getTime();
   const end = new Date(endTime).getTime();
   const ms = end - start;
-  if (ms <= 0) return "—";
+  if (ms <= 0) return "-";
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
@@ -47,7 +46,6 @@ interface DashboardOverviewProps {
 export default function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const navigate = useNavigate();
   const { data: analytics, isLoading: analyticsLoading } = useGetDashboardAnalyticsQuery();
-  const { data: eventsData, isLoading: eventsLoading } = useListEventsQuery({ limit: 20 });
 
   const handleEventClick = () => {
     if (onNavigate) {
@@ -60,31 +58,30 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
   const metrics = analytics?.cards ?? [];
   const eventData = analytics?.eventData ?? [];
   const engagementData = analytics?.engagementData ?? [];
-  const previousGoLiveEvents = (eventsData?.events ?? []).map((event: any) => ({
+  const dashboardEvents =
+    (analytics?.events && analytics.events.length > 0
+      ? analytics.events
+      : analytics?.previousGoLiveEvents) ?? [];
+
+  const previousGoLiveEvents = dashboardEvents.map((event: DashboardEventItem): PreviousGoLiveRow => ({
     id: event.eventId,
     name: event.title,
-    date: event.startTime ? new Date(event.startTime).toLocaleDateString() : "—",
-    time: event.startTime && event.endTime
-      ? `${new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(event.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-      : event.startTime
-        ? new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "—",
+    date: event.startTime ? new Date(event.startTime).toLocaleDateString() : "-",
+    time:
+      event.startTime && event.endTime
+        ? `${new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(event.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+        : event.startTime
+          ? new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "-",
     duration: getDuration(event.startTime, event.endTime),
-    totalViewers: (event as any).totalViewers ?? 0,
-    peakViewers: (event as any).peakViewers ?? 0,
-    avgWatchTime: (event as any).avgWatchTime ?? "—",
-    thumbnail: (event as any).thumbnailUrl ?? "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&q=80",
+    totalViewers: event.totalViewers ?? 0,
+    peakViewers: event.peakViewers ?? 0,
+    avgWatchTime: event.avgWatchTime ?? "-",
+    thumbnail: event.thumbnailUrl ?? "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&q=80",
   }));
-
-  // const handleUserClick = () => {
-  //   if (onNavigate) {
-  //     onNavigate('users');
-  //   }
-  // };
 
   return (
     <div className="space-y-6">
-      {/* Search Bar */}
       <div className="relative max-w-2xl">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
@@ -94,7 +91,6 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
         />
       </div>
 
-      {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {analyticsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
@@ -136,9 +132,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
         )}
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Events This Week */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="border-b border-gray-100 pb-4">
             <CardTitle className="flex items-center gap-2">
@@ -159,7 +153,6 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
           </CardContent>
         </Card>
 
-        {/* Viewer Engagement */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="border-b border-gray-100 pb-4">
             <CardTitle className="flex items-center gap-2">
@@ -181,7 +174,6 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
         </Card>
       </div>
 
-      {/* Previous Go Live Section */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100 pb-4">
           <div className="flex items-center justify-between">
@@ -193,7 +185,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
               onClick={handleEventClick}
               className="text-sm text-[#B89B5E] hover:text-[#A28452] transition-colors"
             >
-              View All →
+              {"View All ->"}
             </button>
           </div>
         </CardHeader>
@@ -211,7 +203,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                 </tr>
               </thead>
               <tbody>
-                {eventsLoading ? (
+                {analyticsLoading ? (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-[#6B6B6B]">
                       Loading events...
@@ -228,7 +220,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                     <tr
                       key={event.id}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => navigate("/events", { state: { viewEventId: event.id } })}
+                      onClick={() => navigate('/events', { state: { viewEventId: event.id } })}
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">
@@ -255,11 +247,11 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Eye className="w-4 h-4 text-[#6B6B6B]" />
-                          <span className="text-sm">{typeof event.totalViewers === "number" ? event.totalViewers.toLocaleString() : event.totalViewers}</span>
+                          <span className="text-sm">{typeof event.totalViewers === 'number' ? event.totalViewers.toLocaleString() : event.totalViewers}</span>
                         </div>
                       </td>
                       <td className="p-4 text-sm text-[#B89B5E]">
-                        {typeof event.peakViewers === "number" ? event.peakViewers.toLocaleString() : event.peakViewers}
+                        {typeof event.peakViewers === 'number' ? event.peakViewers.toLocaleString() : event.peakViewers}
                       </td>
                       <td className="p-4 text-sm text-[#6B6B6B]">
                         {event.avgWatchTime}

@@ -96,6 +96,7 @@ export const paymentsApi = playerBaseApi.injectEndpoints({
 export const {
   useCreatePaymentSessionMutation,
   useCheckPaymentStatusQuery,
+  useLazyCheckPaymentStatusQuery,
   useListPaymentsForEventQuery,
   useGetPaymentDetailQuery,
 } = paymentsApi;
