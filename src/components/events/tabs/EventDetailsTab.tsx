@@ -1,6 +1,6 @@
 // src/features/events/tabs/EventDetailsTab.tsx
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { DateTime } from "luxon";
 import { Video, Upload, Info, Loader2 } from "lucide-react";
 
@@ -23,6 +23,7 @@ import {
   updateField,
   setVodUploadProgress,
   setVodUploadError,
+  setVodUploadFileName,
   setVodS3Key,
 } from "../../../store/slices/eventFormSlice";
 
@@ -35,13 +36,36 @@ type Props = {
 export default function EventDetailsTab({ mode }: Props) {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
-  console.log("EventDetailsTab render", { form });
 
   const [getPresign] = useGetPresignedVodUrlMutation();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const isUploading = form.vodUpload.uploading;
+  const hasUploadedVod = Boolean(form.s3Key);
+  const isReadOnlyVod = mode === "update" || hasUploadedVod;
+  const hasPendingSelection = Boolean(selectedFile) && !hasUploadedVod;
+
+  const previewUrl = useMemo(() => {
+    if (!selectedFile || !selectedFile.type.startsWith("video/")) return null;
+    return URL.createObjectURL(selectedFile);
+  }, [selectedFile]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  useEffect(() => {
+    if (!hasUploadedVod) return;
+    setSelectedFile(null);
+    dispatch(setVodUploadFileName(null));
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }, [hasUploadedVod, dispatch]);
+
   const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
 
   const startTimeValue = form.startTime
@@ -64,9 +88,11 @@ export default function EventDetailsTab({ mode }: Props) {
   ====================================================== */
 
   const handleSelect = (file?: File | null) => {
-    if (!file) return;
+    if (!file || isReadOnlyVod) return;
     setSelectedFile(file);
-    dispatch(updateField({ key: "s3Key", value: file.name }));
+    dispatch(setVodUploadError(null));
+    dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
+    dispatch(setVodUploadFileName(file.name));
   };
 
   /* ======================================================
@@ -74,7 +100,7 @@ export default function EventDetailsTab({ mode }: Props) {
   ====================================================== */
 
   const handleUpload = async () => {
-    if (!selectedFile || isUploading) {
+    if (isReadOnlyVod || !selectedFile || isUploading) {
       dispatch(setVodUploadError("No file selected"));
       return;
     }
@@ -114,6 +140,7 @@ export default function EventDetailsTab({ mode }: Props) {
             resolve();
           } else {
             dispatch(setVodUploadError("Upload failed"));
+            dispatch(setVodUploadProgress({ progress: 0, uploading: false }));
             reject();
           }
         };
@@ -264,7 +291,7 @@ export default function EventDetailsTab({ mode }: Props) {
             accept="video/*"
             className="hidden"
             onChange={(e) => handleSelect(e.target.files?.[0])}
-            disabled={mode === "update"}
+            disabled={isReadOnlyVod}
           />
 
           <div className="space-y-3">
@@ -273,16 +300,16 @@ export default function EventDetailsTab({ mode }: Props) {
             <div className="flex items-center gap-3">
               <Input
                 readOnly
-                value={form.s3Key ?? ""}
+                value={form.s3Key ?? selectedFile?.name ?? form.vodUpload.fileName ?? ""}
                 placeholder="No file selected"
                 className="bg-gray-50"
               />
 
               <button
                 type="button"
-                disabled={isUploading || mode === "update"}
+                disabled={isUploading || isReadOnlyVod}
                 onClick={() => fileRef.current?.click()}
-                className="px-4 py-2 bg-[#B89B5E] text-white rounded-md hover:bg-[#A28452] flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 border border-[#B89B5E] text-[#B89B5E] rounded-md hover:bg-[#B89B5E]/10 flex items-center gap-2 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" />
                 Select
@@ -290,9 +317,13 @@ export default function EventDetailsTab({ mode }: Props) {
 
               <button
                 type="button"
-                disabled={isUploading || mode === "update"}
+                disabled={isUploading || isReadOnlyVod || !selectedFile}
                 onClick={handleUpload}
-                className="px-4 py-2 border rounded-md bg-[#B89B5E]/10 text-[#B89B5E] hover:bg-[#B89B5E]/20 disabled:opacity-50 flex items-center gap-2"
+                className={`px-4 py-2 border rounded-md disabled:opacity-50 flex items-center gap-2 ${
+                  hasPendingSelection
+                    ? "bg-[#B89B5E] border-[#B89B5E] text-white hover:bg-[#A28452]"
+                    : "bg-[#B89B5E]/10 border-[#B89B5E]/30 text-[#B89B5E] hover:bg-[#B89B5E]/20"
+                }`}
               >
                 {isUploading ? (
                   <>
@@ -305,6 +336,16 @@ export default function EventDetailsTab({ mode }: Props) {
               </button>
             </div>
 
+            {previewUrl && !hasUploadedVod && (
+              <div className="rounded-md border bg-black/90 p-2">
+                <video
+                  src={previewUrl}
+                  controls
+                  className="w-full max-h-56 rounded"
+                />
+              </div>
+            )}
+
             {isUploading && (
               <div className="w-full bg-gray-200 h-2 rounded">
                 <div
@@ -316,6 +357,12 @@ export default function EventDetailsTab({ mode }: Props) {
 
             {form.vodUpload.error && (
               <p className="text-xs text-red-600">{form.vodUpload.error}</p>
+            )}
+
+            {hasUploadedVod && (
+              <p className="text-xs text-green-700 font-medium">
+                Video uploaded successfully.
+              </p>
             )}
 
             <p className="text-xs text-[#6B6B6B]">

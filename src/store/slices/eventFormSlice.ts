@@ -250,6 +250,11 @@ const eventFormSlice = createSlice({
       state.updatedAt = new Date().toISOString();
     },
 
+    setVodUploadFileName(state, action: PayloadAction<string | null>) {
+      state.vodUpload.fileName = action.payload;
+      state.updatedAt = new Date().toISOString();
+    },
+
     setVodS3Key(
       state,
       action: PayloadAction<{ s3Key: string; s3Prefix?: string | null }>
@@ -282,6 +287,7 @@ export const {
   removeRegistrationField,
   setVodUploadProgress,
   setVodUploadError,
+  setVodUploadFileName,
   setVodS3Key,
 } = eventFormSlice.actions;
 
