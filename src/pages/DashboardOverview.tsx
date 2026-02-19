@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input';
 import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, Search, UserPlus, DollarSign } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ImageWithFallback } from '../components/common/ImageWithFallback';
 import { useGetDashboardAnalyticsQuery, type DashboardEventItem } from '../store/services/dashboard.service';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -36,7 +35,6 @@ interface PreviousGoLiveRow {
   totalViewers: number | string;
   peakViewers: number | string;
   avgWatchTime: string;
-  thumbnail: string;
 }
 
 interface DashboardOverviewProps {
@@ -77,7 +75,6 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
     totalViewers: event.totalViewers ?? 0,
     peakViewers: event.peakViewers ?? 0,
     avgWatchTime: event.avgWatchTime ?? "-",
-    thumbnail: event.thumbnailUrl ?? "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&q=80",
   }));
 
   return (
@@ -224,11 +221,9 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <ImageWithFallback
-                            src={event.thumbnail}
-                            alt={event.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
+                          <div className="w-14 h-14 rounded-xl bg-[#B89B5E]/15 text-[#B89B5E] flex items-center justify-center shrink-0">
+                            <Video className="w-7 h-7" />
+                          </div>
                           <span className="text-sm hover:text-[#B89B5E] transition-colors">{event.name}</span>
                         </div>
                       </td>

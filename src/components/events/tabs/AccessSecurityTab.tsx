@@ -40,6 +40,9 @@ export default function AccessSecurityTab() {
       payment: "paidAccess",
     };
     dispatch(updateField({ key: "accessMode", value: map[value] }));
+    if (value === "password") {
+      dispatch(updateField({ key: "accessPassword", value: "" }));
+    }
   };
 
   const uiMode =
@@ -130,13 +133,22 @@ export default function AccessSecurityTab() {
                   </div>
                   <div className="space-y-1">
                     <Label>Type</Label>
-                    <Input
-                      value={field.type}
-                      placeholder="text / email / number"
-                      onChange={(e) =>
-                        dispatch(updateRegistrationField({ id: field.id, changes: { type: e.target.value } }))
+                    <Select
+                      value={field.type || "text"}
+                      onValueChange={(v) =>
+                        dispatch(updateRegistrationField({ id: field.id, changes: { type: v } }))
                       }
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select field type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="number">Number</SelectItem>
+                        <SelectItem value="tel">Phone</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <Label>Required</Label>
@@ -198,7 +210,7 @@ export default function AccessSecurityTab() {
               <Label>Amount *</Label>
               <Input
                 type="number"
-                min={0}
+                min={0.01}
                 step={0.01}
                 placeholder="99.00"
                 value={form.paymentAmount ?? ""}
@@ -206,7 +218,10 @@ export default function AccessSecurityTab() {
                   dispatch(
                     updateField({
                       key: "paymentAmount",
-                      value: e.target.value === "" ? null : Number(e.target.value),
+                      value:
+                        e.target.value === "" || Number(e.target.value) <= 0
+                          ? null
+                          : Number(e.target.value),
                     })
                   )
                 }

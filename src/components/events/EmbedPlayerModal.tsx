@@ -1,5 +1,6 @@
-import CopyText from "../common/CopyText";
+import { useState } from "react";
 import { X } from "lucide-react";
+import { ClipboardCopy, Check } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function EmbedPlayerModal({ open, onClose, eventId }: Props) {
+  const [copied, setCopied] = useState(false);
   if (!open) return null;
 
   const iframeCode = `<iframe
@@ -21,6 +23,12 @@ export default function EmbedPlayerModal({ open, onClose, eventId }: Props) {
   sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-presentation"
 ></iframe>`;
 
+  const copyIframeCode = async () => {
+    await navigator.clipboard.writeText(iframeCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white w-full max-w-2xl rounded-xl shadow-lg p-6 relative">
@@ -32,18 +40,28 @@ export default function EmbedPlayerModal({ open, onClose, eventId }: Props) {
           <X size={18} />
         </button>
 
-        <h3 className="text-lg font-semibold mb-2">Embed Player</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold">Embed Player</h3>
+        </div>
+
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-gray-600">
           Copy and paste this iframe code into your website.
         </p>
+        <button
+            type="button"
+            onClick={copyIframeCode}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-md hover:bg-blue-50"
+          >
+            {copied ? <Check size={14} className="text-green-600" /> : <ClipboardCopy size={14} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        
 
         <pre className="bg-gray-100 border rounded-lg p-4 text-sm overflow-auto">
           <code>{iframeCode}</code>
         </pre>
-
-        <div className="mt-4">
-          <CopyText text={iframeCode} />
-        </div>
       </div>
     </div>
   );
