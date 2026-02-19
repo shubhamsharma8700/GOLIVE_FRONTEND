@@ -230,7 +230,7 @@ export function ViewersManagement() {
                     "Viewer Name",
                     "Email",
                     "Type",
-                    "Watching Hours",
+                    "Watch Time",
                     "Event Type",
                     "Last Active",
                     "Actions",
@@ -240,7 +240,7 @@ export function ViewersManagement() {
                       className="p-4 text-left text-sm text-[#B89B5E]"
                     >
                       {label === "Viewer Name" ||
-                        label === "Watching Hours" ? (
+                        label === "Watch Time" ? (
                         <button
                           onClick={() =>
                             handleSort(

@@ -197,7 +197,7 @@ export function ViewerDetailsModal({
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-sm text-gray-600 mb-1">Watch Time</p>
                   <p className="text-xl font-semibold text-[#B89B5E]">
-                    {(aggregated.totalWatchTimeSum / 3600).toFixed(1)} hrs
+                    {(aggregated.totalWatchTimeSum /  60).toFixed(0)} mins
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
