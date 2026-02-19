@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, Search, UserPlus, DollarSign } from 'lucide-react';
+// import { Input } from '../components/ui/input';
+import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, UserPlus, DollarSign } from 'lucide-react';
+// import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, Search, UserPlus, DollarSign } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetDashboardAnalyticsQuery, type DashboardEventItem } from '../store/services/dashboard.service';
 
@@ -79,14 +80,14 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
 
   return (
     <div className="space-y-6">
-      <div className="relative max-w-2xl">
+      {/* <div className="relative max-w-2xl">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
           type="search"
           placeholder="Search events, admins or analytics..."
           className="pl-10 bg-white"
         />
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {analyticsLoading ? (

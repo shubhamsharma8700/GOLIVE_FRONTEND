@@ -199,7 +199,7 @@ export default function EventDetailsTab({ mode }: Props) {
       </div>
 
       {/* DESCRIPTION */}
-      <div className="space-y-4 mt-4">
+      <div className="space-y-4 mt-4 mb-4">
         <Label>Description</Label>
         <Textarea
           rows={4}
@@ -233,7 +233,7 @@ export default function EventDetailsTab({ mode }: Props) {
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
-              disabled={mode === "update" && form.status === "Ready for Live"}
+              // disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function EventDetailsTab({ mode }: Props) {
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
-              disabled={mode === "update" && form.status === "Ready for Live"}
+              // disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
