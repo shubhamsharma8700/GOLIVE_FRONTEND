@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 // import { Input } from '../components/ui/input';
-import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, UserPlus, DollarSign } from 'lucide-react';
+import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, UserPlus, DollarSign, Tag } from 'lucide-react';
 // import { Calendar, Users, TrendingUp, Video, Eye, Clock, Activity, Search, UserPlus, DollarSign } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetDashboardAnalyticsQuery, type DashboardEventItem } from '../store/services/dashboard.service';
@@ -33,6 +33,7 @@ interface PreviousGoLiveRow {
   date: string;
   time: string;
   duration: string;
+  eventType: string;
   totalViewers: number | string;
   peakViewers: number | string;
   avgWatchTime: string;
@@ -73,6 +74,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
           ? new Date(event.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           : "-",
     duration: getDuration(event.startTime, event.endTime),
+    eventType: event.eventType,
     totalViewers: event.totalViewers ?? 0,
     peakViewers: event.peakViewers ?? 0,
     avgWatchTime: event.avgWatchTime ?? "-",
@@ -195,6 +197,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Event</th>
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Date & Time</th>
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Duration</th>
+                  <th className="text-left p-4 text-sm text-[#6B6B6B]">Event Type</th>
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Total Viewers</th>
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Peak Viewers</th>
                   <th className="text-left p-4 text-sm text-[#6B6B6B]">Avg Watch Time</th>
@@ -203,13 +206,13 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
               <tbody>
                 {analyticsLoading ? (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-[#6B6B6B]">
+                    <td colSpan={7} className="p-6 text-center text-[#6B6B6B]">
                       Loading events...
                     </td>
                   </tr>
                 ) : previousGoLiveEvents.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-[#6B6B6B]">
+                    <td colSpan={7} className="p-6 text-center text-[#6B6B6B]">
                       No events yet
                     </td>
                   </tr>
@@ -238,6 +241,13 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-[#B89B5E]" />
                           <span className="text-sm">{event.duration}</span>
+                        </div>
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-[#B89B5E]" />
+                          <span className="text-sm">{event.eventType}</span>
                         </div>
                       </td>
                       <td className="p-4">

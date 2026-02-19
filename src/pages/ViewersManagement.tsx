@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo } from "react";
-import { Search, ArrowUpDown, Eye } from "lucide-react";
+import { Search, ArrowUpDown, Eye, Tag } from "lucide-react";
 
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -138,6 +138,34 @@ export function ViewersManagement() {
     }
   };
 
+  const getViewerAccessLabel = (type?: string) => {
+    switch ((type ?? "").trim()) {
+      case "freeAccess":
+        return "Open Access";
+      case "emailAccess":
+        return "Email Required";
+      case "passwordAccess":
+        return "Password Protected";
+      case "paidAccess":
+        return "Paid Access";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const getEventTypeLabel = (eventType?: string) => {
+    switch ((eventType ?? "").trim()) {
+      case "vod":
+        return "VOD";
+      case "live":
+        return "Live";
+      case "scheduled":
+        return "Scheduled";
+      default:
+        return "Unknown";
+    }
+  };
+
 
   const formatDuration = (totalSeconds = 0) => {
     const seconds = Math.floor(totalSeconds);
@@ -194,105 +222,122 @@ export function ViewersManagement() {
         </CardHeader>
 
         <CardContent className="p-0">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {[
-                  "Viewer Name",
-                  "Email",
-                  "Type",
-                  "Watching Hours",
-                  "Event Type",
-                  "Last Active",
-                  "Actions",
-                ].map((label) => (
-                  <th
-                    key={label}
-                    className="p-4 text-left text-sm text-[#B89B5E]"
-                  >
-                    {label === "Viewer Name" ||
-                      label === "Watching Hours" ? (
-                      <button
-                        onClick={() =>
-                          handleSort(
-                            label === "Viewer Name"
-                              ? "name"
-                              : "watchingHours"
-                          )
-                        }
-                        className="flex items-center gap-2"
-                      >
-                        {label}
-                        <ArrowUpDown className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      label
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {isLoading ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-500">
-                    Loading viewersâ€¦
-                  </td>
+                  {[
+                    "Viewer Name",
+                    "Email",
+                    "Type",
+                    "Watching Hours",
+                    "Event Type",
+                    "Last Active",
+                    "Actions",
+                  ].map((label) => (
+                    <th
+                      key={label}
+                      className="p-4 text-left text-sm text-[#B89B5E]"
+                    >
+                      {label === "Viewer Name" ||
+                        label === "Watching Hours" ? (
+                        <button
+                          onClick={() =>
+                            handleSort(
+                              label === "Viewer Name"
+                                ? "name"
+                                : "watchingHours"
+                            )
+                          }
+                          className="flex items-center gap-2 font-medium"
+                        >
+                          {label}
+                          <ArrowUpDown className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        label
+                      )}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                viewers.map((viewer) => (
-                  <tr
-                    key={`${viewer.eventId}-${viewer.clientViewerId}`}
-                    className="border-t hover:bg-gray-50 cursor-pointer"
-                    onClick={() => openViewerModal(viewer)}
-                  >
-                    <td className="p-4 flex items-center gap-3">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${getAvatarColor(
-                          viewer.isPaidViewer
-                        )}`}
-                      >
-                        <span className="text-white text-sm">
-                          {getInitials(viewer)}
-                        </span>
-                      </div>
-                      {getRowDisplayName(viewer)}
-                    </td>
+              </thead>
 
-                    <td className="p-4">
-                      {viewer.email ?? viewer.formData?.email ?? "â€”"}
-                    </td>
-
-                    <td className="p-4">
-                      <Badge className={getViewerTypeBadgeColor(viewer?.event?.accessMode)}>{viewer?.event?.accessMode ?? "—"}</Badge>
-                    </td>
-
-                    <td className="p-4">
-                      {formatDuration(viewer.totalWatchTime ?? 0)}
-                    </td>
-
-                    <td className="p-4">{viewer?.event?.eventType ?? "â€”"}</td>
-
-                    <td className="p-4">
-                      {formatDateTime12h(viewer.lastActiveAt)}
-                    </td>
-
-                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="sm"
-                        className="bg-[#B89B5E] text-white hover:bg-[#A28452]"
-                        onClick={() => openViewerModal(viewer)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-[#6B6B6B]">
+                      Loading viewers...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : viewers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-[#6B6B6B]">
+                      No viewers found
+                    </td>
+                  </tr>
+                ) : (
+                  viewers.map((viewer) => (
+                    <tr
+                      key={`${viewer.eventId}-${viewer.clientViewerId}`}
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => openViewerModal(viewer)}
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${getAvatarColor(
+                              viewer.isPaidViewer
+                            )}`}
+                          >
+                            <span className="text-white text-sm font-medium">
+                              {getInitials(viewer)}
+                            </span>
+                          </div>
+                          <span className="font-medium text-gray-900">{getRowDisplayName(viewer)}</span>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-[#6B6B6B]">
+                        {viewer.email ?? viewer.formData?.email ?? "-"}
+                      </td>
+
+                      <td className="p-4">
+                        <Badge className={getViewerTypeBadgeColor(viewer?.event?.accessMode)}>
+                          {getViewerAccessLabel(viewer?.event?.accessMode)}
+                        </Badge>
+                      </td>
+
+                      <td className="p-4 text-[#6B6B6B]">
+                        {formatDuration(viewer.totalWatchTime ?? 0)}
+                      </td>
+
+                      <td className="p-4 text-[#6B6B6B]">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-[#B89B5E]" />
+                          <span>{getEventTypeLabel(viewer?.event?.eventType)}</span>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-[#6B6B6B]">
+                        {formatDateTime12h(viewer.lastActiveAt)}
+                      </td>
+
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          className="bg-[#B89B5E] text-white hover:bg-[#A28452]"
+                          onClick={() => openViewerModal(viewer)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* PAGINATION */}
           <div className="border-t bg-gray-50 px-6 py-4">

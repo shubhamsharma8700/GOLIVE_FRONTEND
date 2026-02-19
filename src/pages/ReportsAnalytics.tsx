@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, Calendar, Clock, Eye, Search, TrendingUp, Users } from 'lucide-react';
+import { Activity, BarChart3, Calendar, Clock, DollarSign, Eye, Search, TrendingUp } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -39,6 +39,7 @@ type ApiEvent = {
 };
 
 const numberFmt = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+const currencyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
 const formatDuration = (seconds: number) => {
   if (!seconds) return '0m';
@@ -79,6 +80,11 @@ export function ReportsAnalytics() {
 
   const summary = reportData?.summary;
   const charts = reportData?.charts;
+  const revenueCurrency = summary?.totalRevenueCurrency || 'USD';
+  const totalRevenue = summary?.totalRevenue ?? 0;
+  const formattedRevenue = revenueCurrency === 'USD'
+    ? currencyFmt.format(totalRevenue)
+    : new Intl.NumberFormat('en-US', { style: 'currency', currency: revenueCurrency }).format(totalRevenue);
 
   const topEventsRows = useMemo<AnalyticsTopEvent[]>(() => {
     if (reportData?.topEvents?.length) return reportData.topEvents;
@@ -141,10 +147,10 @@ export function ReportsAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="mb-1 text-sm text-[#6B6B6B]">Avg Viewers</p>
-                <h3 className="text-3xl">{numberFmt.format(summary?.avgViewers ?? 0)}</h3>
+                <p className="mb-1 text-sm text-[#6B6B6B]">Total Revenue</p>
+                <h3 className="text-3xl">{formattedRevenue}</h3>
               </div>
-              <Users className="h-10 w-10 text-[#3B82F6]" />
+              <DollarSign className="h-10 w-10 text-[#3B82F6]" />
             </div>
           </CardContent>
         </Card>
