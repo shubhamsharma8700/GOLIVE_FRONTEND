@@ -69,12 +69,12 @@ export default function EventDetailsTab({ mode }: Props) {
   const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
 
   const startTimeValue = form.startTime
-  ? DateTime.fromISO(form.startTime).toFormat("yyyy-MM-dd'T'HH:mm")
-  : "";
+    ? DateTime.fromISO(form.startTime).toFormat("yyyy-MM-dd'T'HH:mm")
+    : "";
 
   const endTimeValue = form.endTime
-  ? DateTime.fromISO(form.endTime).toFormat("yyyy-MM-dd'T'HH:mm")
-  : "";
+    ? DateTime.fromISO(form.endTime).toFormat("yyyy-MM-dd'T'HH:mm")
+    : "";
 
   useEffect(() => {
     if (form.eventType === "live" && !form.startTime) {
@@ -233,7 +233,7 @@ export default function EventDetailsTab({ mode }: Props) {
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
-              // disabled={mode === "update" && form.status === "Ready for Live"}
+            // disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function EventDetailsTab({ mode }: Props) {
               onChange={(e) =>
                 dispatch(updateField({ key: "endTime", value: e.target.value }))
               }
-              // disabled={mode === "update" && form.status === "Ready for Live"}
+            // disabled={mode === "update" && form.status === "Ready for Live"}
             />
           </div>
         </div>
@@ -319,11 +319,10 @@ export default function EventDetailsTab({ mode }: Props) {
                 type="button"
                 disabled={isUploading || isReadOnlyVod || !selectedFile}
                 onClick={handleUpload}
-                className={`px-4 py-2 border rounded-md disabled:opacity-50 flex items-center gap-2 ${
-                  hasPendingSelection
+                className={`px-4 py-2 border rounded-md disabled:opacity-50 flex items-center gap-2 ${hasPendingSelection
                     ? "bg-[#B89B5E] border-[#B89B5E] text-white hover:bg-[#A28452]"
                     : "bg-[#B89B5E]/10 border-[#B89B5E]/30 text-[#B89B5E] hover:bg-[#B89B5E]/20"
-                }`}
+                  }`}
               >
                 {isUploading ? (
                   <>
@@ -342,6 +341,9 @@ export default function EventDetailsTab({ mode }: Props) {
                   src={previewUrl}
                   controls
                   className="w-full max-h-56 rounded"
+                  onError={() =>
+                    dispatch(setVodUploadError("Preview not supported for this format"))
+                  }
                 />
               </div>
             )}

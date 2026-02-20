@@ -148,7 +148,7 @@ const eventSlice = createSlice({
          PLAYBACK RULE
          If VOD is READY → ALWAYS PLAY VOD
       ================================================= */
-      const isVodReady = state.vodStatus === "READY";
+      const isVodReady = state.vodStatus === "READY" || state.vodStatus === "NEW_WARNING";
 
       if (isVodReady && state.vodCloudFrontUrl) {
         state.playbackUrl = state.vodCloudFrontUrl;
