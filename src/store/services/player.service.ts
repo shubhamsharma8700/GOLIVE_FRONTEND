@@ -13,6 +13,9 @@ export const playerApi = playerBaseApi.injectEndpoints({
           clientViewerId: string;
           accessVerified: boolean;
           isPaidViewer: boolean;
+          passwordVerified?: boolean;
+          paymentStatus?: string;
+          registrationComplete?: boolean;
         };
       },
       {
@@ -53,6 +56,14 @@ export const playerApi = playerBaseApi.injectEndpoints({
         viewerToken: string;
         accessVerified: boolean;
         accessMode: string;
+        resolvedClientViewerId?: string;
+        reusedExistingViewer?: boolean;
+        steps?: {
+          formSubmitted?: boolean;
+          passwordVerified?: boolean;
+          paymentVerified?: boolean;
+          registrationComplete?: boolean;
+        };
       },
       {
         eventId: string;
@@ -76,17 +87,26 @@ export const playerApi = playerBaseApi.injectEndpoints({
       {
         success: boolean;
         accessVerified: boolean;
+        steps?: {
+          passwordVerified?: boolean;
+          paymentVerified?: boolean;
+          registrationComplete?: boolean;
+        };
       },
       {
         eventId: string;
         clientViewerId: string;
         password: string;
+        viewerToken?: string;
       }
     >({
-      query: ({ eventId, ...body }) => ({
+      query: ({ eventId, viewerToken, ...body }) => ({
         url: `/playback/event/${eventId}/verify-password`,
         method: "POST",
         body,
+        headers: viewerToken
+          ? { Authorization: `Bearer ${viewerToken}` }
+          : undefined,
       }),
     }),
 

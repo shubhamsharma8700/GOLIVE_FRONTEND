@@ -10,6 +10,7 @@ export interface AnalyticsReportSummary {
   totalSessions: number;
   paidViewers: number;
   totalRevenue: number;
+  totalRevenueCurrency?: string;
 }
 
 export interface ViewershipPoint {
@@ -82,6 +83,7 @@ export interface AnalyticsTopEvent {
   engagement: number;
   completionRate: number;
   size: number;
+  revenueUsd?: number;
 }
 
 export interface AnalyticsReportResponse {

@@ -26,9 +26,27 @@ import {
   Edit,
   Trash2,
   Calendar as CalendarIcon,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime12h } from "../../utils/formatDateTime";
+
+const getEventTypeLabel = (eventType?: string) => {
+  if (!eventType) return "--";
+  if (eventType === "vod") return "VOD";
+  if (eventType === "live") return "Live";
+  if (eventType === "scheduled") return "Scheduled";
+  return eventType;
+};
+
+const getEventPrivacyLabel = (accessMode?: string) => {
+  if (!accessMode) return "--";
+  if (accessMode === "freeAccess") return "Open Access";
+  if (accessMode === "emailAccess") return "Email Required";
+  if (accessMode === "passwordAccess") return "Password Protected";
+  if (accessMode === "paidAccess") return "Paid Access";
+  return accessMode;
+};
 
 export default function EventList({
   // onCreate,
@@ -71,7 +89,6 @@ export default function EventList({
 
   return (
     <div className="space-y-6">
-
       {/* Events Table Card */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
@@ -90,7 +107,9 @@ export default function EventList({
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left p-4 text-sm text-[#B89B5E]">Event Name</th>
-                    <th className="text-left p-4 text-sm text-[#B89B5E]">Date & Time</th>
+                    <th className="text-left p-4 text-sm text-[#B89B5E]">Event Time</th>
+                    <th className="text-left p-4 text-sm text-[#B89B5E]">Event Type</th>
+                    <th className="text-left p-4 text-sm text-[#B89B5E]">Event Privacy</th>
                     <th className="text-left p-4 text-sm text-[#B89B5E]">Status</th>
                     <th className="text-left p-4 text-sm text-[#B89B5E]">Created At</th>
                     <th className="text-left p-4 text-sm text-[#B89B5E]">Actions</th>
@@ -100,15 +119,13 @@ export default function EventList({
                 {/* ---------- TABLE BODY ---------- */}
                 <tbody>
                   {events.map((event: any) => {
-                    const date = event.startTime
-                      ? new Date(event.startTime)
-                      : null;
-
-                    const formattedDate =
-                      date ? date.toLocaleDateString() : "--";
-
-                    const formattedTime =
-                      date ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--";
+                    const eventTimeValue = event.eventType === "vod"
+                      ? event.createdAt
+                      : event.startTime ?? event.createdAt;
+                    const formattedEventTime = eventTimeValue ? formatDateTime12h(eventTimeValue) : "--";
+                    const formattedCreatedAt = event.createdAt ? formatDateTime12h(event.createdAt) : "--";
+                    const eventTypeLabel = getEventTypeLabel(event.eventType);
+                    const eventPrivacyLabel = getEventPrivacyLabel(event.accessMode);
 
                     return (
                       <tr
@@ -125,10 +142,19 @@ export default function EventList({
                           </div>
                         </td>
 
-                        {/* -------- Date & Time -------- */}
+                        {/* -------- Event Time -------- */}
+                        <td className="p-4 text-[#6B6B6B]">{formattedEventTime}</td>
+
+                        {/* -------- Event Type -------- */}
                         <td className="p-4 text-[#6B6B6B]">
-                          {formattedDate} • {formattedTime}
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-4 h-4 text-[#B89B5E]" />
+                            <span>{eventTypeLabel}</span>
+                          </div>
                         </td>
+
+                        {/* -------- Event Privacy -------- */}
+                        <td className="p-4 text-[#6B6B6B]">{eventPrivacyLabel}</td>
 
                         {/* -------- Status Badge -------- */}
                         <td className="p-4">
@@ -153,15 +179,13 @@ export default function EventList({
                             ) : event.status === "uploaded" ? (
                               "Completed"
                             ) : (
-                             event.vodStatus === "READY" ? "VOD READY" : event.status
+                              event.vodStatus === "READY" ? "VOD READY" : event.status
                             )}
                           </Badge>
                         </td>
 
                         {/* -------- Created At -------- */}
-                        <td className="p-4 text-gray-700">
-                          {formatDateTime12h(event.createdAt) || "--"}
-                        </td>
+                        <td className="p-4 text-gray-700">{formattedCreatedAt}</td>
 
                         {/* -------- Actions -------- */}
                         <td className="p-4 flex items-center gap-2">

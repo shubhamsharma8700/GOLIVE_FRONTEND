@@ -105,7 +105,8 @@ export default function PlayerPage() {
   const sessionIdRef = useRef<string | null>(null);
   const isPlayingRef = useRef(false);
 
-  const clientViewerId = useMemo(() => getClientViewerId(), []);
+  const initialClientViewerId = useMemo(() => getClientViewerId(), []);
+  const [clientViewerId, setClientViewerId] = useState(initialClientViewerId);
   const [viewerToken, setViewerToken] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
@@ -137,12 +138,21 @@ export default function PlayerPage() {
 
   useEffect(() => {
     if (!storedViewerToken) {
+      setPaidAccessPasswordDone(getPaidAccessPasswordDone(eventId));
       setValidationAttempted(true);
       return;
     }
 
     if (isValidateSuccess && validateData?.success) {
       setViewerToken(storedViewerToken);
+      if (validateData.viewer.clientViewerId) {
+        setClientViewerId(validateData.viewer.clientViewerId);
+      }
+      const passwordStepDone =
+        Boolean(validateData.viewer.passwordVerified) ||
+        getPaidAccessPasswordDone(eventId);
+      setPaidAccessPasswordDone(passwordStepDone);
+      setPaidAccessPasswordDoneState(eventId, passwordStepDone);
 
       const canAccess =
         accessMode === "freeAccess" ||
@@ -182,11 +192,19 @@ export default function PlayerPage() {
       deviceInfo: collectDeviceInfo(),
     }).unwrap();
 
+    const resolvedViewerId = res.resolvedClientViewerId || clientViewerId;
+    setClientViewerId(resolvedViewerId);
     setViewerToken(res.viewerToken);
     storeViewerToken(eventId, res.viewerToken);
-    setPaidAccessPasswordDone(false);
-    setPaidAccessPasswordDoneState(eventId, false);
-    setHasAccess(Boolean(res.accessVerified));
+    const passwordStepDone = Boolean(res.steps?.passwordVerified);
+    setPaidAccessPasswordDone(passwordStepDone);
+    setPaidAccessPasswordDoneState(eventId, passwordStepDone);
+    setHasAccess(
+      Boolean(
+        res.accessVerified ||
+        (accessMode === "emailAccess" && res.steps?.registrationComplete)
+      )
+    );
   };
 
   /* ================= PASSWORD VERIFY ================= */
@@ -194,20 +212,22 @@ export default function PlayerPage() {
   const [verifyPassword] = useVerifyPasswordMutation();
 
   const handlePasswordVerify = async (password: string) => {
-    await verifyPassword({
+    const res = await verifyPassword({
       eventId,
       clientViewerId,
       password,
+      viewerToken: viewerToken ?? undefined,
     }).unwrap();
 
     if (accessMode === "passwordAccess") {
-      setHasAccess(true);
+      setHasAccess(Boolean(res.accessVerified || res.steps?.registrationComplete));
       return;
     }
 
     if (accessMode === "paidAccess") {
-      setPaidAccessPasswordDone(true);
-      setPaidAccessPasswordDoneState(eventId, true);
+      const passwordStepDone = Boolean(res.steps?.passwordVerified);
+      setPaidAccessPasswordDone(passwordStepDone);
+      setPaidAccessPasswordDoneState(eventId, passwordStepDone);
     }
   };
 
@@ -374,7 +394,7 @@ export default function PlayerPage() {
           seconds: 10,
           viewerToken,
           eventId,
-          clientViewerId
+          clientViewerId,
         });
       }, 10000);
     };
@@ -437,8 +457,10 @@ export default function PlayerPage() {
   }, [accessMode, eventId, viewerToken, validationAttempted]);
 
   useEffect(() => {
-    setPaidAccessPasswordDone(getPaidAccessPasswordDone(eventId));
-  }, [eventId]);
+    if (!viewerToken) {
+      setPaidAccessPasswordDone(getPaidAccessPasswordDone(eventId));
+    }
+  }, [eventId, viewerToken]);
 
   /* ================= OVERLAYS ================= */
 
