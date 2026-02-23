@@ -111,8 +111,8 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
       };
     }
 
-    // UPDATE ONLY → SCHEDULED (allow time edits)
-    if (mode === "update" && form.eventType === "scheduled") {
+    // UPDATE live → SCHEDULED (allow time edits)
+    if (mode === "update" && form.eventType === "scheduled" || form.eventType === "live") {
       payload.startTime = localToUtcISO(form.startTime);
       payload.endTime = localToUtcISO(form.endTime);
     }
