@@ -212,9 +212,10 @@ export default function EventList({
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDeleteClick(event.eventId, event.title)}
-                            disabled={isDeleting}
+                            // disabled={isDeleting}
+                            disabled={event?.isDeletionInProgress}
                           >
-                            <Trash2 className="w-4 h-4 mr-1" /> {isDeleting ? "Deleting..." : "Delete"}
+                            <Trash2 className="w-4 h-4 mr-1" /> {event?.isDeletionInProgress ? "Deleting..." : "Delete"}
                           </Button>
                         </td>
                       </tr>
