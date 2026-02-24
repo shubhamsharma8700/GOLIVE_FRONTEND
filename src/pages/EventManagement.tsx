@@ -16,12 +16,14 @@ import { resetForm } from "../store/slices/eventFormSlice";
 export type EventViewMode = "list" | "create" | "edit";
 
 export default function EventManagementPage() {
+  const PAGE_SIZE = 10;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<EventViewMode>("list");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleCreate = () => {
     dispatch(resetForm());
@@ -86,7 +88,10 @@ export default function EventManagementPage() {
             placeholder="Search events by name..."
             className="pl-10 bg-white"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
       )}
@@ -108,6 +113,9 @@ export default function EventManagementPage() {
       {mode === "list" && (
         <EventList
           searchQuery={searchQuery}
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCurrentPage}
           onCreate={handleCreate}
           onEdit={handleEdit}
           onView={handleView}

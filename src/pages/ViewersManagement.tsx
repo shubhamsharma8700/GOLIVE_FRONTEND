@@ -6,15 +6,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationPrevious,
-  PaginationNext,
-} from "../components/ui/pagination";
-
 import { ViewerDetailsModal } from "../components/ViewerDetailsModal";
 import {
   useGetViewersQuery,
@@ -89,6 +80,10 @@ export function ViewersManagement() {
     data?.totalItems ?? data?.pagination?.totalItems ?? viewers.length;
   const nextCursor =
     data?.pagination?.nextToken ?? data?.pagination?.nextKey ?? null;
+  const currentPage = cursorStack.length;
+  const totalPages = Math.max(1, Math.ceil(totalViewers / limit));
+  const startIndex = totalViewers === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const endIndex = Math.min(currentPage * limit, totalViewers);
 
   const handleSort = (column: "name" | "watchingHours") => {
     if (sortColumn === column) {
@@ -218,7 +213,14 @@ export function ViewersManagement() {
       {/* TABLE */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle>All Viewers ({totalViewers})</CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>All Viewers ({totalViewers})</CardTitle>
+            <span className="text-sm text-[#6B6B6B]">
+              {totalViewers === 0
+                ? "No records"
+                : `Showing ${startIndex}-${endIndex} of ${totalViewers}`}
+            </span>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -341,56 +343,37 @@ export function ViewersManagement() {
 
           {/* PAGINATION */}
           <div className="border-t bg-gray-50 px-6 py-4">
-            <Pagination>
-              <PaginationContent>
+            <div className="flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (cursorStack.length > 1) {
+                    setCursorStack((prev) => prev.slice(0, prev.length - 1));
+                  }
+                }}
+                disabled={cursorStack.length === 1 || isLoading}
+              >
+                Previous
+              </Button>
 
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (cursorStack.length > 1) {
-                        setCursorStack((prev) =>
-                          prev.slice(0, prev.length - 1)
-                        );
-                      }
-                    }}
-                    className={
-                      cursorStack.length === 1
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
-                  />
-                </PaginationItem>
+              <span className="text-sm text-[#6B6B6B]">
+                Page {currentPage} of {totalPages}
+              </span>
 
-                <PaginationItem>
-                  <PaginationLink isActive>
-                    {cursorStack.length}
-                  </PaginationLink>
-                </PaginationItem>
-
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (nextCursor) {
-                        setCursorStack((prev) => [
-                          ...prev,
-                          nextCursor,
-                        ]);
-                      }
-                    }}
-                    className={
-                      !data?.pagination?.hasMore || !nextCursor
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
-                  />
-                </PaginationItem>
-
-              </PaginationContent>
-            </Pagination>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (nextCursor) {
+                    setCursorStack((prev) => [...prev, nextCursor]);
+                  }
+                }}
+                disabled={!data?.pagination?.hasMore || !nextCursor || isLoading}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -404,5 +387,4 @@ export function ViewersManagement() {
     </div>
   );
 }
-
 

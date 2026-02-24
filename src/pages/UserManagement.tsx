@@ -26,24 +26,35 @@ import { toast } from "sonner";
 import {
   useListAdminsQuery,
   useDeleteAdminMutation,
+  type AdminItem,
   // useUpdateAdminMutation,
 } from "../store/services/users.service";
 
 import AddAdminModal from "../components/AddAdminModal";
 
 export function UserManagement() {
+  const PAGE_SIZE = 10;
   const [searchQuery, setSearchQuery] = useState("");
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([null]);
+  const currentCursor = cursorStack[cursorStack.length - 1];
 
   const { data, isLoading, isError, refetch } = useListAdminsQuery({
     q: searchQuery || undefined,
-    limit: 50,
+    limit: PAGE_SIZE,
+    lastKey: currentCursor ?? undefined,
   });
 
   const [deleteAdmin] = useDeleteAdminMutation();
   // const [updateAdmin] = useUpdateAdminMutation();
 
   const admins = data?.items || [];
+  const totalAdmins = data?.pagination?.totalItems ?? admins.length;
+  const currentPage = cursorStack.length;
+  const totalPages = Math.max(1, Math.ceil(totalAdmins / PAGE_SIZE));
+  const startIndex = totalAdmins === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const endIndex = Math.min(currentPage * PAGE_SIZE, totalAdmins);
+  const nextKey = data?.pagination?.nextKey ?? null;
 
   const getStatusBadgeColor = (status: string) =>
     status === "active"
@@ -112,7 +123,10 @@ export function UserManagement() {
           placeholder="Search admins by name or email"
           className="pl-10 bg-white"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCursorStack([null]);
+          }}
         />
       </div>
 
@@ -143,7 +157,14 @@ export function UserManagement() {
       {/* TABLE */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle>All Admins ({admins.length})</CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>All Admins ({totalAdmins})</CardTitle>
+            <span className="text-sm text-[#6B6B6B]">
+              {totalAdmins === 0
+                ? "No records"
+                : `Showing ${startIndex}-${endIndex} of ${totalAdmins}`}
+            </span>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -162,7 +183,7 @@ export function UserManagement() {
               </thead>
 
               <tbody>
-                {admins.map((admin: any) => (
+                {admins.map((admin: AdminItem) => (
                   <tr
                     key={admin.adminID}
                     className="border-t border-gray-100 hover:bg-gray-50 transition"
@@ -195,7 +216,9 @@ export function UserManagement() {
 
                         <CalendarIcon className="w-4 h-4 text-[#B89B5E]" />
 
-                        <span className="text-sm">{new Date(admin.createdAt).toLocaleString() || 0}</span>
+                        <span className="text-sm">
+                          {admin.createdAt ? new Date(admin.createdAt).toLocaleString() : "-"}
+                        </span>
 
                       </div>
 
@@ -203,7 +226,7 @@ export function UserManagement() {
 
                     {/* CREATED AT */}
                     <td className="p-4 text-sm text-[#6B6B6B]">
-                      {new Date(admin.lastLoginAt).toLocaleString()}
+                      {admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString() : "-"}
                     </td>
 
                     {/* ACTIONS */}
@@ -251,6 +274,42 @@ export function UserManagement() {
               </tbody>
             </table>
           </div>
+
+          {totalAdmins > 0 && (
+            <div className="border-t bg-gray-50 px-6 py-4">
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (cursorStack.length > 1) {
+                      setCursorStack((prev) => prev.slice(0, prev.length - 1));
+                    }
+                  }}
+                  disabled={cursorStack.length === 1 || isLoading}
+                >
+                  Previous
+                </Button>
+
+                <span className="text-sm text-[#6B6B6B]">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (nextKey) {
+                      setCursorStack((prev) => [...prev, nextKey]);
+                    }
+                  }}
+                  disabled={!data?.pagination?.hasMore || !nextKey || isLoading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

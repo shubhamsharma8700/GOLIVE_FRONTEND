@@ -6,6 +6,7 @@ export interface ViewersPaginationKey {
 }
 
 export interface ViewersQueryParams {
+  page?: number;
   limit?: number;
   nextToken?: string | null;
   lastKey?: string | null | ViewersPaginationKey;

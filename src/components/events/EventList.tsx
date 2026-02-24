@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useListEventsQuery,
   useDeleteEventMutation,
@@ -53,18 +53,38 @@ export default function EventList({
   onEdit,
   onView,
   searchQuery,
+  currentPage,
+  pageSize,
+  onPageChange,
 }: {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onView: (id: string) => void;
   searchQuery?: string;
+  currentPage: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
 }) {
   const [deleteTarget, setDeleteTarget] = useState<{ eventId: string; title: string } | null>(null);
 
-  const { data, isLoading, refetch } = useListEventsQuery({ q: searchQuery });
+  const { data, isLoading, refetch } = useListEventsQuery({
+    q: searchQuery,
+    page: currentPage,
+    limit: pageSize,
+  });
   const [deleteEvent, { isLoading: isDeleting }] = useDeleteEventMutation();
 
   const events = data?.events || [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalCount);
+
+  useEffect(() => {
+    if (!isLoading && currentPage > totalPages) {
+      onPageChange(totalPages);
+    }
+  }, [currentPage, isLoading, onPageChange, totalPages]);
 
   const handleDeleteClick = (eventId: string, title: string) => {
     setDeleteTarget({ eventId, title });
@@ -92,7 +112,14 @@ export default function EventList({
       {/* Events Table Card */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle>All Events ({events.length})</CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>All Events ({totalCount})</CardTitle>
+            <span className="text-sm text-[#6B6B6B]">
+              {totalCount === 0
+                ? "No records"
+                : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+            </span>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -227,6 +254,30 @@ export default function EventList({
           )}
         </CardContent>
       </Card>
+
+      {totalCount > 0 && (
+        <div className="flex items-center justify-end gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || isLoading}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-[#6B6B6B]">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages || isLoading}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && handleDeleteCancel()}>
         <AlertDialogContent>

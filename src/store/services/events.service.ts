@@ -8,11 +8,13 @@ export const eventsApi = adminBaseApi.injectEndpoints({
     // ------------------------------------------------------
     listEvents: builder.query({
       query: ({
+        page,
         limit,
         lastKey,
         q,
         type,
       }: {
+        page?: number;
         limit?: number;
         lastKey?: string;
         q?: string;
@@ -20,6 +22,7 @@ export const eventsApi = adminBaseApi.injectEndpoints({
       } = {}) => {
         const params = new URLSearchParams();
 
+        if (page) params.append("page", String(page));
         if (limit) params.append("limit", String(limit));
         if (lastKey) params.append("lastKey", lastKey);
         if (q) params.append("q", q);
