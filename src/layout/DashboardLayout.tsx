@@ -15,7 +15,7 @@ export default function DashboardLayout() {
     const path = location.pathname;
     const viewId =
       path === "/" || path === "/dashboard" ? "dashboard" :
-      path === "/events" ? "events" :
+      path.startsWith("/events") ? "events" :
       path === "/viewers" ? "viewers" :
       path === "/reports" ? "reports" :
       path === "/users" ? "users" : "dashboard";
@@ -26,7 +26,7 @@ export default function DashboardLayout() {
     const path = location.pathname;
     if (path === "/" || path === "/dashboard") {
       dispatch(adminBaseApi.util.invalidateTags(["Dashboard", "Events"]));
-    } else if (path === "/events") {
+    } else if (path.startsWith("/events")) {
       dispatch(adminBaseApi.util.invalidateTags(["Events"]));
     } else if (path === "/viewers") {
       dispatch(adminBaseApi.util.invalidateTags(["Viewers"]));

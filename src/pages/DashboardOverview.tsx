@@ -221,7 +221,7 @@ export default function DashboardOverview({ onNavigate }: DashboardOverviewProps
                     <tr
                       key={event.id}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => navigate('/events', { state: { viewEventId: event.id } })}
+                      onClick={() => navigate(`/events/${event.id}`)}
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">

@@ -16,12 +16,14 @@ export default function CopyText({ text }: CopyTextProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-800">{text || "N/A"}</span>
+    <div className="flex items-start gap-2 min-w-0">
+      <span className="text-sm text-gray-800 break-all whitespace-normal min-w-0">
+        {text || "N/A"}
+      </span>
 
       <button
         onClick={copy}
-        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition"
+        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition shrink-0"
       >
         {copied ? (
           <Check className="w-4 h-4 text-green-600" />

@@ -4,6 +4,7 @@ import Login from "../pages/Login";
 import ForgotPassword from "../pages/ForgotPassword";
 import DashboardOverview from "../pages/DashboardOverview";
 import EventManagement from "../pages/EventManagement";
+import EventViewPage from "../pages/EventViewPage";
 // import CreateEvent from "../pages/CreateEvent";
 import {UserManagement} from "../pages/UserManagement";
 import {ViewersManagement} from "../pages/ViewersManagement";
@@ -34,6 +35,7 @@ export default function App() {
       >
         <Route index element={<DashboardOverview />} />
         <Route path="events" element={<EventManagement />} />
+        <Route path="events/:eventId" element={<EventViewPage />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="viewers" element={<ViewersManagement />} />
         <Route path="reports" element={<ReportsAnalytics />} />
