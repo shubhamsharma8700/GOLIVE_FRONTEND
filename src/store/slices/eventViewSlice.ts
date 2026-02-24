@@ -9,6 +9,10 @@ export interface EventViewState {
   description: string | null;
   eventType: "live" | "scheduled" | "vod" | null;
   status: string | null;
+  accessMode: string | null;
+  accessPassword: string | null;
+  paymentAmount: number | null;
+  currency: string | null;
 
   // Playback
   playbackUrl: string | null;
@@ -58,6 +62,10 @@ const initialState: EventViewState = {
   description: null,
   eventType: null,
   status: null,
+  accessMode: null,
+  accessPassword: null,
+  paymentAmount: null,
+  currency: null,
 
   playbackUrl: null,
   playbackMode: null,
@@ -107,6 +115,10 @@ const eventSlice = createSlice({
       state.description = e.description ?? null;
       state.eventType = e.eventType ?? null;
       state.status = e.status ?? null;
+      state.accessMode = e.accessMode ?? null;
+      state.accessPassword = e.accessPassword ?? null;
+      state.paymentAmount = typeof e.paymentAmount === "number" ? e.paymentAmount : null;
+      state.currency = e.currency ?? null;
 
       /* ---------------- LIVE ---------------- */
       state.cloudFrontUrl = e.cloudFrontUrl ?? null;

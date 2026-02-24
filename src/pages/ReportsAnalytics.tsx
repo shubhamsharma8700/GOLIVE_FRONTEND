@@ -61,6 +61,15 @@ const formatDate = (date: string | null | undefined) => {
   });
 };
 
+const formatAvgWatchTime = (minutes: number | string | null | undefined) => {
+  if (minutes === null || minutes === undefined || minutes === '') return '-';
+  if (typeof minutes === 'number') return `${minutes} m`;
+  const trimmed = String(minutes).trim();
+  if (!trimmed) return '-';
+  if (/[a-zA-Z]/.test(trimmed)) return trimmed;
+  return `${trimmed} m`;
+};
+
 export function ReportsAnalytics() {
   const [selectedEventId, setSelectedEventId] = useState<string>('all');
   const { data: eventsData } = useListEventsQuery({ limit: 20 });
@@ -100,7 +109,6 @@ export function ReportsAnalytics() {
       avgWatchTime: 0,
       duration: '0m',
       engagement: 0,
-      completionRate: 0,
       size: 80,
     }));
   }, [apiEvents, reportData?.topEvents]);
@@ -294,13 +302,12 @@ export function ReportsAnalytics() {
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Avg Watch Time</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Duration</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Engagement</th>
-                  <th className="p-4 text-left text-sm text-[#B89B5E]">Completion Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {topEventsRows.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="p-6 text-center text-[#6B6B6B]">No events found</td>
+                    <td colSpan={12} className="p-6 text-center text-[#6B6B6B]">No events found</td>
                   </tr>
                 ) : (
                   topEventsRows.map((event, index) => (
@@ -316,12 +323,9 @@ export function ReportsAnalytics() {
                       <td className="p-4 text-[#6B6B6B]">{event.viewers ?? '-'}</td>
                       <td className="p-4 text-[#6B6B6B]">{event.uniqueViewers ?? '-'}</td>
                       <td className="p-4 text-[#6B6B6B]">{event.peakConcurrent ?? '-'}</td>
-                      <td className="p-4 text-[#6B6B6B]">{event.avgWatchTime ?? '-'}</td>
+                      <td className="p-4 text-[#6B6B6B]">{formatAvgWatchTime(event.avgWatchTime)}</td>
                       <td className="p-4 text-[#6B6B6B]">{event.duration ?? '-'}</td>
                       <td className="p-4 text-[#6B6B6B]">{event.engagement ?? '-'}</td>
-                      <td className="p-4 text-[#6B6B6B]">
-                        {event.completionRate !== undefined ? `${event.completionRate}%` : '-'}
-                      </td>
                     </tr>
                   ))
                 )}

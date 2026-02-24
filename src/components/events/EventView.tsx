@@ -22,11 +22,10 @@ import "jb-videojs-hls-quality-selector";
 import {
   ArrowLeft,
   Hash,
-  Activity,
-  Circle,
   User,
-  Calendar,
   Clock,
+  Shield,
+  DollarSign,
   Server,
   Link,
   Network,
@@ -267,25 +266,29 @@ function EventQuickInfo({ event }: any) {
           <CopyText text={event.eventId} />
         </InfoRow>
 
-        <InfoRow label="Type" icon={<Activity size={16} />}>
-          <span className="text-gray-900 font-medium capitalize">
-            {event.eventType || "N/A"}
+        <InfoRow label="Access Type" icon={<Shield size={16} />}>
+          <span className="text-gray-900 text-sm">
+            {getAccessModeLabel(event.accessMode)}
           </span>
         </InfoRow>
 
-        <InfoRow label="Status" icon={<Circle size={16} />}>
-          <StatusBadge status={event.vodStatus === "READY" ? "VOD READY" : event.status} />
-        </InfoRow>
+        {(event.accessMode === "passwordAccess" || event.accessMode === "paidAccess") && (
+          <InfoRow label="Event Password" icon={<Shield size={16} />}>
+            <CopyText text={event.accessPassword || "N/A"} />
+          </InfoRow>
+        )}
+
+        {event.accessMode === "paidAccess" && (
+          <InfoRow label="Paid Access Cost" icon={<DollarSign size={16} />}>
+            <span className="text-gray-900 text-sm font-medium">
+              {formatPaymentAmount(event.paymentAmount, event.currency)}
+            </span>
+          </InfoRow>
+        )}
 
         <InfoRow label="Created By" icon={<User size={16} />}>
           <span className="text-gray-900 text-sm">
             {event.createdBy || "N/A"}
-          </span>
-        </InfoRow>
-
-        <InfoRow label="Created At" icon={<Calendar size={16} />}>
-          <span className="text-gray-900 text-sm">
-            {formatLocalDateTime(event.createdAt)}
           </span>
         </InfoRow>
 
@@ -606,4 +609,27 @@ function formatLocalDateTime(date?: string | null) {
     .fromISO(date, { zone: "utc" })
     .toLocal()
     .toFormat("dd LLL yyyy, hh:mm a");
+}
+
+function getAccessModeLabel(accessMode?: string | null) {
+  if (!accessMode) return "N/A";
+  if (accessMode === "freeAccess") return "Open Access";
+  if (accessMode === "emailAccess") return "Email Required";
+  if (accessMode === "passwordAccess") return "Password Protected";
+  if (accessMode === "paidAccess") return "Paid Access";
+  return accessMode;
+}
+
+function formatPaymentAmount(amount?: number | null, currency?: string | null) {
+  if (typeof amount !== "number") return "N/A";
+  const safeCurrency = currency || "USD";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: safeCurrency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${safeCurrency} ${amount}`;
+  }
 }

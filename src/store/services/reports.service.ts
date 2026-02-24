@@ -81,7 +81,6 @@ export interface AnalyticsTopEvent {
   avgWatchTime: number;
   duration: string;
   engagement: number;
-  completionRate: number;
   size: number;
   revenueUsd?: number;
 }
