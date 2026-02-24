@@ -184,6 +184,9 @@ export default function AccessSecurityTab() {
           <Label>Event Password (required)</Label>
           <Input
             type="password"
+            name="event-access-password"
+            autoComplete="new-password"
+            data-lpignore="true"
             placeholder="Enter event password"
             value={form.accessPassword ?? ""}
             onChange={(e) =>

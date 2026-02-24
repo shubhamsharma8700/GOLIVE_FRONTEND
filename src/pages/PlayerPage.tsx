@@ -94,6 +94,16 @@ function setPaidAccessPasswordDoneState(eventId: string, done: boolean) {
   localStorage.removeItem(`paidAccessPasswordDone:${eventId}`);
 }
 
+function getErrorMessage(err: any, fallback: string) {
+  return (
+    err?.data?.message ||
+    err?.data?.error ||
+    err?.error ||
+    err?.message ||
+    fallback
+  );
+}
+
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? "";
@@ -185,26 +195,30 @@ export default function PlayerPage() {
   const [registerViewer] = useRegisterViewerMutation();
 
   const handleRegister = async (formData?: Record<string, string>) => {
-    const res = await registerViewer({
-      eventId,
-      clientViewerId,
-      formData,
-      deviceInfo: collectDeviceInfo(),
-    }).unwrap();
+    try {
+      const res = await registerViewer({
+        eventId,
+        clientViewerId,
+        formData,
+        deviceInfo: collectDeviceInfo(),
+      }).unwrap();
 
-    const resolvedViewerId = res.resolvedClientViewerId || clientViewerId;
-    setClientViewerId(resolvedViewerId);
-    setViewerToken(res.viewerToken);
-    storeViewerToken(eventId, res.viewerToken);
-    const passwordStepDone = Boolean(res.steps?.passwordVerified);
-    setPaidAccessPasswordDone(passwordStepDone);
-    setPaidAccessPasswordDoneState(eventId, passwordStepDone);
-    setHasAccess(
-      Boolean(
-        res.accessVerified ||
-        (accessMode === "emailAccess" && res.steps?.registrationComplete)
-      )
-    );
+      const resolvedViewerId = res.resolvedClientViewerId || clientViewerId;
+      setClientViewerId(resolvedViewerId);
+      setViewerToken(res.viewerToken);
+      storeViewerToken(eventId, res.viewerToken);
+      const passwordStepDone = Boolean(res.steps?.passwordVerified);
+      setPaidAccessPasswordDone(passwordStepDone);
+      setPaidAccessPasswordDoneState(eventId, passwordStepDone);
+      setHasAccess(
+        Boolean(
+          res.accessVerified ||
+          (accessMode === "emailAccess" && res.steps?.registrationComplete)
+        )
+      );
+    } catch (err: any) {
+      throw new Error(getErrorMessage(err, "Registration failed. Please try again."));
+    }
   };
 
   /* ================= PASSWORD VERIFY ================= */
@@ -212,22 +226,27 @@ export default function PlayerPage() {
   const [verifyPassword] = useVerifyPasswordMutation();
 
   const handlePasswordVerify = async (password: string) => {
-    const res = await verifyPassword({
-      eventId,
-      clientViewerId,
-      password,
-      viewerToken: viewerToken ?? undefined,
-    }).unwrap();
+    try {
+      const res = await verifyPassword({
+        eventId,
+        clientViewerId,
+        password,
+        viewerToken: viewerToken ?? undefined,
+      }).unwrap();
 
-    if (accessMode === "passwordAccess") {
-      setHasAccess(Boolean(res.accessVerified || res.steps?.registrationComplete));
-      return;
-    }
+      if (accessMode === "passwordAccess") {
+        setHasAccess(Boolean(res.accessVerified || res.steps?.registrationComplete));
+        return;
+      }
 
-    if (accessMode === "paidAccess") {
-      const passwordStepDone = Boolean(res.steps?.passwordVerified);
-      setPaidAccessPasswordDone(passwordStepDone);
-      setPaidAccessPasswordDoneState(eventId, passwordStepDone);
+      if (accessMode === "paidAccess") {
+        // Successful verify should immediately unlock payment step.
+        const passwordStepDone = Boolean(res.success || res.steps?.passwordVerified);
+        setPaidAccessPasswordDone(passwordStepDone);
+        setPaidAccessPasswordDoneState(eventId, passwordStepDone);
+      }
+    } catch (err: any) {
+      throw new Error(getErrorMessage(err, "Invalid password. Please try again."));
     }
   };
 
@@ -296,13 +315,16 @@ export default function PlayerPage() {
 
   const handlePayment = async () => {
     if (!viewerToken) return;
+    try {
+      const res = await createPaymentSession({
+        eventId,
+        viewerToken,
+      }).unwrap();
 
-    const res = await createPaymentSession({
-      eventId,
-      viewerToken,
-    }).unwrap();
-
-    window.location.href = res.url;
+      window.location.href = res.url;
+    } catch (err: any) {
+      throw new Error(getErrorMessage(err, "Unable to start payment. Please try again."));
+    }
   };
 
   /* ================= STREAM ================= */
@@ -452,7 +474,7 @@ export default function PlayerPage() {
       eventId &&
       validationAttempted
     ) {
-      handleRegister();
+      handleRegister().catch(() => undefined);
     }
   }, [accessMode, eventId, viewerToken, validationAttempted]);
 

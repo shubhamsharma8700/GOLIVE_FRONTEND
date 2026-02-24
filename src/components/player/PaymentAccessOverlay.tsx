@@ -46,6 +46,8 @@ const PaymentAccessOverlay: React.FC<PaymentAccessOverlayProps> = ({
       await onPay(); // Stripe handled in PlayerPage
     } catch (err: any) {
       setError(
+        err?.data?.message ||
+          err?.data?.error ||
         err?.message ||
           "Payment failed. Please try again or use a different card."
       );

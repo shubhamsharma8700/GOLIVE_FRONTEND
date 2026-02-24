@@ -13,7 +13,7 @@ export interface EmailOverlayProps {
   open: boolean;
   eventId: string;
   fields: RegistrationField[];
-  onAccessGranted: (formData: Record<string, string>) => void;
+  onAccessGranted: (formData: Record<string, string>) => Promise<void> | void;
 }
 
 const EmailOverlay: React.FC<EmailOverlayProps> = ({
@@ -24,6 +24,7 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
 }) => {
   const [form, setForm] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -39,16 +40,42 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
   };
 
   const handleSubmit = () => {
-    for (const field of fields) {
-      if (field.required && !form[field.id]) {
-        setError(`${field.label} is required`);
-        return;
-      }
-    }
+    if (loading) return;
 
-    setError("");
-    onAccessGranted(form);
+    const run = async () => {
+      for (const field of fields) {
+        if (field.required && !form[field.id]) {
+          setError(`${field.label} is required`);
+          return;
+        }
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        await onAccessGranted(form);
+      } catch (err: any) {
+        setError(
+          err?.message ||
+            err?.data?.message ||
+            "Unable to continue. Please check your details and try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
   };
+
+  const getAutocomplete = (fieldType: string) => {
+    if (fieldType === "email") return "off";
+    if (fieldType === "password") return "new-password";
+    return "off";
+  };
+
+  const resolveFieldType = (fieldType: string) =>
+    fieldType === "password" ? "password" : fieldType || "text";
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -138,11 +165,15 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
           {fields.map((field) => (
             <input
               key={field.id}
-              type={field.type || "text"}
+              type={resolveFieldType(field.type)}
+              name={`viewer-${field.id}`}
               placeholder={field.label}
               value={form[field.id] || ""}
+              autoComplete={getAutocomplete(field.type)}
+              data-lpignore="true"
               onChange={(e) => handleChange(field.id, e.target.value)}
               onKeyDown={handleKeyPress}
+              disabled={loading}
               style={inputStyle}
             />
           ))}
@@ -153,6 +184,7 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
 
           <button
             onClick={handleSubmit}
+            disabled={loading}
             style={{
               width: "100%",
               background: "linear-gradient(to right, #fbbf24, #d97706)",
@@ -161,10 +193,11 @@ const EmailOverlay: React.FC<EmailOverlayProps> = ({
               padding: "0.65rem",
               borderRadius: "0.5rem",
               border: "none",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.8 : 1,
             }}
           >
-            Continue to Watch
+            {loading ? "Please wait..." : "Continue to Watch"}
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Lock } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 
 export interface PasswordAccessOverlayProps {
   open: boolean;
@@ -15,6 +15,7 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   /* ---------------------------------------------
@@ -25,6 +26,7 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
       setPassword("");
       setError("");
       setLoading(false);
+      setShowPassword(false);
 
       const t = setTimeout(() => setIsVisible(true), 10);
       return () => clearTimeout(t);
@@ -54,8 +56,10 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
       await onSubmit(password);
     } catch (err: any) {
       setError(
+        err?.data?.message ||
+          err?.data?.error ||
         err?.message ||
-          "Invalid or expired password. Please check your email."
+          "Invalid password. Please try again."
       );
     } finally {
       setLoading(false);
@@ -168,16 +172,30 @@ const PasswordAccessOverlay: React.FC<PasswordAccessOverlayProps> = ({
 
         {/* Form */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <input
-            type="password"
-            placeholder="Enter password"
-            autoFocus
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyPress}
-            disabled={loading}
-            style={inputStyle}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="viewer-password"
+              autoComplete="new-password"
+              data-lpignore="true"
+              placeholder="Enter password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyPress}
+              disabled={loading}
+              style={{ ...inputStyle, paddingRight: "2.5rem" }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              disabled={loading}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              style={toggleEyeButtonStyle}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
 
           {error && (
             <p style={{ fontSize: "0.875rem", color: "#ef4444" }}>
@@ -233,6 +251,21 @@ const buttonStyle: React.CSSProperties = {
   padding: "0.75rem",
   borderRadius: "0.5rem",
   border: "none",
+};
+
+const toggleEyeButtonStyle: React.CSSProperties = {
+  position: "absolute",
+  right: "0.7rem",
+  top: "50%",
+  transform: "translateY(-50%)",
+  border: "none",
+  background: "transparent",
+  color: "#6b7280",
+  cursor: "pointer",
+  padding: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 export default PasswordAccessOverlay;
