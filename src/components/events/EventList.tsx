@@ -96,7 +96,7 @@ export default function EventList({
       await deleteEvent(deleteTarget.eventId).unwrap();
       setDeleteTarget(null);
       await refetch();
-      toast.success("Event deleted successfully");
+      toast.success("Event deletion has been successfully initiated.");
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete event");

@@ -456,13 +456,21 @@ function StreamConfig({ event }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 min-w-0">
         {/* STREAM URLS */}
         <InfoField label="CloudFront Playback URL" icon={<Link size={16} />} className="min-w-0">
-          <div className="min-w-0 break-all overflow-hidden">
+          <div style={{
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+            whiteSpace: "normal"
+          }}>
             <CopyText text={event.cloudFrontUrl} />
           </div>
         </InfoField>
 
         <InfoField label="MediaPackage Playback URL" icon={<Network size={16} />} className="min-w-0">
-          <div className="min-w-0 break-all overflow-hidden">
+          <div style={{
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+            whiteSpace: "normal"
+          }}>
             <CopyText text={event.mediaPackageUrl} />
           </div>
         </InfoField>
