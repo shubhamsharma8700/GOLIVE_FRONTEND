@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { DateTime } from "luxon";
 
@@ -34,6 +34,10 @@ type Props = {
 export default function EventForm({ mode, eventId, onBack }: Props) {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
+  const [timeErrors, setTimeErrors] = useState<{
+    startTime?: string;
+    endTime?: string;
+  }>({});
 
   const [createEvent] = useCreateEventMutation();
   const [updateEvent] = useUpdateEventMutation();
@@ -69,6 +73,80 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
       .toISO();
   };
 
+  const validateTimeRules = () => {
+    const nextErrors: { startTime?: string; endTime?: string } = {};
+    const now = DateTime.local();
+    const nowPlusFive = now.plus({ minutes: 5 });
+
+    const parseLocal = (value?: string | null) =>
+      value ? DateTime.fromISO(value, { zone: "local" }) : null;
+
+    const start = parseLocal(form.startTime);
+    const end = parseLocal(form.endTime);
+
+    if (form.eventType === "live") {
+      if (end && end < nowPlusFive) {
+        nextErrors.endTime =
+          "End time must be at least 5 minutes after current time.";
+        setTimeErrors(nextErrors);
+        toast.error("For live events, end time must be at least 5 minutes after current time.");
+        document.getElementById("event-end-time")?.focus();
+        return false;
+      }
+      setTimeErrors({});
+      return true;
+    }
+
+    if (form.eventType === "scheduled") {
+      if (!start || !start.isValid) {
+        nextErrors.startTime = "Please select a valid start time.";
+        setTimeErrors(nextErrors);
+        toast.error("Please select a valid start time.");
+        document.getElementById("event-start-time")?.focus();
+        return false;
+      }
+
+      if (start < nowPlusFive) {
+        nextErrors.startTime =
+          "Start time must be at least 5 minutes after current time.";
+        setTimeErrors(nextErrors);
+        toast.error("For scheduled events, start time must be at least 5 minutes after current time.");
+        document.getElementById("event-start-time")?.focus();
+        return false;
+      }
+
+      if (end) {
+        if (!end.isValid) {
+          nextErrors.endTime = "Please select a valid end time.";
+          setTimeErrors(nextErrors);
+          toast.error("Please select a valid end time.");
+          document.getElementById("event-end-time")?.focus();
+          return false;
+        }
+
+        if (end < nowPlusFive) {
+          nextErrors.endTime =
+            "End time must be at least 5 minutes after current time.";
+          setTimeErrors(nextErrors);
+          toast.error("For scheduled events, end time must be at least 5 minutes after current time.");
+          document.getElementById("event-end-time")?.focus();
+          return false;
+        }
+
+        if (end < start) {
+          nextErrors.endTime = "End time must be later than start time.";
+          setTimeErrors(nextErrors);
+          toast.error("End time must be later than start time.");
+          document.getElementById("event-end-time")?.focus();
+          return false;
+        }
+      }
+    }
+
+    setTimeErrors({});
+    return true;
+  };
+
   /* ======================================================
      BUILD PAYLOAD (BACKEND SAFE)
   ====================================================== */
@@ -101,7 +179,10 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
       mode === "create" &&
       (form.eventType === "live" || form.eventType === "scheduled")
     ) {
-      payload.startTime = localToUtcISO(form.startTime);
+      payload.startTime =
+        form.eventType === "live"
+          ? DateTime.local().toUTC().toISO()
+          : localToUtcISO(form.startTime);
       payload.endTime = localToUtcISO(form.endTime);
 
       payload.videoConfig = {
@@ -112,8 +193,14 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
     }
 
     // UPDATE live → SCHEDULED (allow time edits)
-    if (mode === "update" && form.eventType === "scheduled" || form.eventType === "live") {
-      payload.startTime = localToUtcISO(form.startTime);
+    if (
+      mode === "update" &&
+      (form.eventType === "scheduled" || form.eventType === "live")
+    ) {
+      payload.startTime =
+        form.eventType === "live"
+          ? DateTime.local().toUTC().toISO()
+          : localToUtcISO(form.startTime);
       payload.endTime = localToUtcISO(form.endTime);
     }
 
@@ -179,14 +266,20 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
         }
       }
 
+      if (!validateTimeRules()) {
+        return;
+      }
+
       const payload = buildPayload();
 
       if (mode === "create") {
         await createEvent(payload).unwrap();
+        toast.success("Event created successfully.");
       }
 
       if (mode === "update" && eventId) {
         await updateEvent({ eventId, body: payload }).unwrap();
+        toast.success("Event updated successfully.");
       }
 
       dispatch(resetForm());
@@ -241,7 +334,13 @@ export default function EventForm({ mode, eventId, onBack }: Props) {
 
       {/* Tabs */}
       <EventTabs>
-        <EventDetailsTab mode={mode} />
+        <EventDetailsTab
+          mode={mode}
+          timeErrors={timeErrors}
+          onClearTimeError={(field) =>
+            setTimeErrors((prev) => ({ ...prev, [field]: undefined }))
+          }
+        />
         <VideoConfigTab mode={mode} />
         <AccessSecurityTab />
       </EventTabs>

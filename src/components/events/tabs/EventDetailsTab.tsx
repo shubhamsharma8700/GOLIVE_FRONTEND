@@ -31,9 +31,18 @@ import { useGetPresignedVodUrlMutation } from "../../../store/services/events.se
 
 type Props = {
   mode: "create" | "update";
+  timeErrors?: {
+    startTime?: string;
+    endTime?: string;
+  };
+  onClearTimeError?: (field: "startTime" | "endTime") => void;
 };
 
-export default function EventDetailsTab({ mode }: Props) {
+export default function EventDetailsTab({
+  mode,
+  timeErrors,
+  onClearTimeError,
+}: Props) {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
 
@@ -67,6 +76,9 @@ export default function EventDetailsTab({ mode }: Props) {
   }, [hasUploadedVod, dispatch]);
 
   const nowLocal = DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
+  const nowPlusFiveLocal = DateTime.local()
+    .plus({ minutes: 5 })
+    .toFormat("yyyy-MM-dd'T'HH:mm");
 
   const startTimeValue = form.startTime
     ? DateTime.fromISO(form.startTime).toFormat("yyyy-MM-dd'T'HH:mm")
@@ -77,10 +89,10 @@ export default function EventDetailsTab({ mode }: Props) {
     : "";
 
   useEffect(() => {
-    if (form.eventType === "live" && !form.startTime) {
+    if (form.eventType === "live" && form.startTime !== nowLocal) {
       dispatch(updateField({ key: "startTime", value: nowLocal }));
     }
-  }, [form.eventType, form.startTime, dispatch]);
+  }, [form.eventType, form.startTime, nowLocal, dispatch]);
 
 
   /* ======================================================
@@ -216,25 +228,35 @@ export default function EventDetailsTab({ mode }: Props) {
           <div className="space-y-4">
             <Label>Live Start Time (Local)</Label>
             <Input
+              id="event-start-time"
               type="datetime-local"
               value={startTimeValue}
               readOnly
               disabled={mode === "update" && form.status === "Ready for Live"}
-              className="bg-gray-100"
+              className={`bg-gray-100 ${timeErrors?.startTime ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {timeErrors?.startTime && (
+              <p className="text-xs text-red-600">{timeErrors.startTime}</p>
+            )}
           </div>
 
           <div className="space-y-4">
             <Label>End Time (Optional)</Label>
             <Input
+              id="event-end-time"
               type="datetime-local"
               value={endTimeValue}
-              min={form.startTime ?? undefined}
-              onChange={(e) =>
-                dispatch(updateField({ key: "endTime", value: e.target.value }))
-              }
+              min={nowPlusFiveLocal}
+              onChange={(e) => {
+                dispatch(updateField({ key: "endTime", value: e.target.value }));
+                onClearTimeError?.("endTime");
+              }}
+              className={timeErrors?.endTime ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500" : ""}
             // disabled={mode === "update" && form.status === "Ready for Live"}
             />
+            {timeErrors?.endTime && (
+              <p className="text-xs text-red-600">{timeErrors.endTime}</p>
+            )}
           </div>
         </div>
       )}
@@ -245,27 +267,39 @@ export default function EventDetailsTab({ mode }: Props) {
           <div className="space-y-4">
             <Label>Start Time (Local)</Label>
             <Input
+              id="event-start-time"
               type="datetime-local"
               value={startTimeValue}
-              min={nowLocal}
-              onChange={(e) =>
-                dispatch(updateField({ key: "startTime", value: e.target.value }))
-              }
+              min={nowPlusFiveLocal}
+              onChange={(e) => {
+                dispatch(updateField({ key: "startTime", value: e.target.value }));
+                onClearTimeError?.("startTime");
+              }}
+              className={timeErrors?.startTime ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500" : ""}
               disabled={mode === "update" && form.status === "Ready for Live"}
             />
+            {timeErrors?.startTime && (
+              <p className="text-xs text-red-600">{timeErrors.startTime}</p>
+            )}
           </div>
 
           <div className="space-y-4">
             <Label>End Time (Optional)</Label>
             <Input
+              id="event-end-time"
               type="datetime-local"
               value={endTimeValue}
-              min={form.startTime ?? undefined}
-              onChange={(e) =>
-                dispatch(updateField({ key: "endTime", value: e.target.value }))
-              }
+              min={nowPlusFiveLocal}
+              onChange={(e) => {
+                dispatch(updateField({ key: "endTime", value: e.target.value }));
+                onClearTimeError?.("endTime");
+              }}
+              className={timeErrors?.endTime ? "border-red-500 ring-1 ring-red-500 focus-visible:ring-red-500" : ""}
             // disabled={mode === "update" && form.status === "Ready for Live"}
             />
+            {timeErrors?.endTime && (
+              <p className="text-xs text-red-600">{timeErrors.endTime}</p>
+            )}
           </div>
         </div>
       )}
