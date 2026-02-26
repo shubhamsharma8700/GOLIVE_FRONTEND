@@ -214,7 +214,7 @@ const eventFormSlice = createSlice({
       state.currency = payload.currency ?? state.currency;
       state.accessPassword =
         payload.accessMode === "passwordAccess" || payload.accessMode === "paidAccess"
-          ? ""
+          ? payload.accessPassword ?? state.accessPassword
           : payload.accessPassword ?? state.accessPassword;
 
       state.s3Key = payload.s3Key ?? state.s3Key;

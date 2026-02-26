@@ -25,12 +25,14 @@ import {
   removeRegistrationField,
 } from "../../../store/slices/eventFormSlice";
 
-import { Plus, Trash2, Info } from "lucide-react";
+import { Plus, Trash2, Info, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 export default function AccessSecurityTab() {
   const dispatch = useAppDispatch();
   const form = useAppSelector((s) => s.eventForm);
   const fields = form.registrationFields;
+  const [showEyeIconPassword, setShowEyeIconPassword] = useState(false);
 
   const setAccessMode = (value: string) => {
     const map: Record<string, typeof form.accessMode> = {
@@ -158,19 +160,22 @@ export default function AccessSecurityTab() {
                         onCheckedChange={(checked) =>
                           dispatch(updateRegistrationField({ id: field.id, changes: { required: checked } }))
                         }
+                        disabled={(field.id === "firstName" || field.id === "lastName" || field.id === "email")}
                       />
                       <span className="ml-2 text-xs text-[#6B6B6B]">{field.required ? "Required" : "Optional"}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => dispatch(removeRegistrationField(field.id))}
-                    className="flex items-center gap-2 text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded-md text-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Remove
-                  </button>
+                  {field.id !== "firstName" && field.id !== "lastName" && field.id !== "email" && (
+                    <button
+                      onClick={() => dispatch(removeRegistrationField(field.id))}
+                      className="flex items-center gap-2 text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded-md text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -182,7 +187,7 @@ export default function AccessSecurityTab() {
       {showPassword && (
         <div className="space-y-2 pt-4 border-t border-gray-100">
           <Label>Event Password (required)</Label>
-          <Input
+          {/* <Input
             type="password"
             name="event-access-password"
             autoComplete="new-password"
@@ -197,7 +202,28 @@ export default function AccessSecurityTab() {
             {uiMode === "payment"
               ? "Users will enter this after registration, before payment."
               : "Users must enter this after registration to access the event."}
-          </p>
+          </p> */}
+          <div className="relative mb-4">
+            <Input
+              type={showEyeIconPassword ? "text" : "password"}
+              name="event-access-password"
+              autoComplete="new-password"
+              placeholder="Enter event password"
+              value={form.accessPassword ?? ""}
+              onChange={(e) =>
+                dispatch(updateField({ key: "accessPassword", value: e.target.value }))
+              }
+              className="pr-10"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowEyeIconPassword(!showEyeIconPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
+            >
+              {showEyeIconPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
       )}
 
