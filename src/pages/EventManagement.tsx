@@ -85,7 +85,7 @@ export default function EventManagementPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             type="search"
-            placeholder="Search events by name..."
+            placeholder="Search..."
             className="pl-10 bg-white"
             value={searchQuery}
             onChange={(e) => {
