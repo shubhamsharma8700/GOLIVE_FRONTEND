@@ -300,7 +300,7 @@ export function ViewersManagement() {
                       </td>
 
                       <td className="p-4 text-[#6B6B6B]">
-                        {viewer.email ?? viewer.formData?.email ?? "-"}
+                        {viewer.email ?? viewer.formData?.email ?? "N/A"}
                       </td>
 
                       <td className="p-4">

@@ -7,6 +7,11 @@ import { Video, Upload, Info, Loader2 } from "lucide-react";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../ui/popover";
 
 import {
   Select,
@@ -87,6 +92,10 @@ export default function EventDetailsTab({
   const endTimeValue = form.endTime
     ? DateTime.fromISO(form.endTime).toFormat("yyyy-MM-dd'T'HH:mm")
     : "";
+
+  const showEndTimeCostWarning =
+    (form.eventType === "live" || form.eventType === "scheduled") &&
+    !form.endTime;
 
   useEffect(() => {
     if (form.eventType === "live" && form.startTime !== nowLocal) {
@@ -241,7 +250,28 @@ export default function EventDetailsTab({
           </div>
 
           <div className="space-y-4">
-            <Label>End Time (Optional)</Label>
+            <div className="flex items-center gap-2">
+              <Label>End Time (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Why end time matters"
+                    className="inline-flex items-center justify-center text-amber-600 hover:text-amber-700"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="text-xs leading-relaxed border-amber-200 bg-amber-50 text-amber-900"
+                >
+                  End time is optional, but recommended. If left empty, live AWS
+                  resources may continue running until the event is manually
+                  stopped, which can increase infrastructure cost.
+                </PopoverContent>
+              </Popover>
+            </div>
             <Input
               id="event-end-time"
               type="datetime-local"
@@ -256,6 +286,12 @@ export default function EventDetailsTab({
             />
             {timeErrors?.endTime && (
               <p className="text-xs text-red-600">{timeErrors.endTime}</p>
+            )}
+            {showEndTimeCostWarning && (
+              <p className="text-xs text-amber-700">
+                No end time set. Streaming resources may continue running until
+                you stop the event manually, increasing AWS cost.
+              </p>
             )}
           </div>
         </div>
@@ -284,7 +320,28 @@ export default function EventDetailsTab({
           </div>
 
           <div className="space-y-4">
-            <Label>End Time (Optional)</Label>
+            <div className="flex items-center gap-2">
+              <Label>End Time (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Why end time matters"
+                    className="inline-flex items-center justify-center text-amber-600 hover:text-amber-700"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="text-xs leading-relaxed border-amber-200 bg-amber-50 text-amber-900"
+                >
+                  End time is optional, but recommended. If left empty, live AWS
+                  resources may continue running until the event is manually
+                  stopped, which can increase infrastructure cost.
+                </PopoverContent>
+              </Popover>
+            </div>
             <Input
               id="event-end-time"
               type="datetime-local"
@@ -299,6 +356,12 @@ export default function EventDetailsTab({
             />
             {timeErrors?.endTime && (
               <p className="text-xs text-red-600">{timeErrors.endTime}</p>
+            )}
+            {showEndTimeCostWarning && (
+              <p className="text-xs text-amber-700">
+                No end time set. Streaming resources may continue running until
+                you stop the event manually, increasing AWS cost.
+              </p>
             )}
           </div>
         </div>

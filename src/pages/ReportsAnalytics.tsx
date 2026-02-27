@@ -296,7 +296,7 @@ export function ReportsAnalytics() {
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Date</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Type</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Status</th>
-                  <th className="p-4 text-left text-sm text-[#B89B5E]">Viewers</th>
+                  <th className="p-4 text-left text-sm text-[#B89B5E]">Views</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Unique Viewers</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Peak Concurrent</th>
                   <th className="p-4 text-left text-sm text-[#B89B5E]">Avg Watch Time</th>
