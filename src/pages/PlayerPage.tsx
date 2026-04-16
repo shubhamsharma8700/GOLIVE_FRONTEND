@@ -555,10 +555,10 @@ export default function PlayerPage() {
   if (!eventId) return <div className="p-6 text-white">Invalid event</div>;
 
   return (
-    <div className="h-screen w-full bg-transparent flex items-center justify-center p-4">
+    <div className="h-screen w-full bg-transparent flex items-center justify-center">
       <div
         className="relative w-full bg-black rounded-xl overflow-hidden"
-        style={{ aspectRatio: "16/9", maxWidth: "90%" }}
+        style={{ aspectRatio: "16/9", maxWidth: "100%" }}
       >
         <video
           ref={videoRef}
