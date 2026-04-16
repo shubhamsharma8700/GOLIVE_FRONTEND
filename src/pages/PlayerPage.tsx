@@ -557,8 +557,9 @@ export default function PlayerPage() {
   return (
     <div className="h-screen w-full bg-transparent flex items-center justify-center">
       <div
-        className="relative w-full bg-black rounded-xl overflow-hidden"
-        style={{ aspectRatio: "16/9", maxWidth: "100%" }}
+        className="relative w-full bg-black overflow-hidden"
+        style={{ aspectRatio: "16/9", maxWidth: "75%" }}
+        // style={{ aspectRatio: "16/9", maxWidth: "100%" }}
       >
         <video
           ref={videoRef}
